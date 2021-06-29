@@ -304,7 +304,8 @@ def trainmodel():
     pkl_file = "classifier.pkl"
     with open(pkl_file, 'wb') as file:
         pickle.dump(clf, file)
-def predict():
+    return True
+def predict(target):
     train_labels = os.listdir(train_path)
 
     # sort the training labels
@@ -314,8 +315,7 @@ def predict():
         clf = pickle.load(model)
     global_features = []
     # read the image
-    image = cv2.imread("/home/datasets/test/44.jpg")
-    print(image)
+    image = cv2.imread(target)
     # resize the image
     image = cv2.resize(image, fixed_size)
 
@@ -344,8 +344,9 @@ def predict():
     # display the output image
     #plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     #plt.show()
-    print(train_labels[prediction])
+    return train_labels[prediction]
 #predict([r"B:\\Golem Image Classifier\\dataset\\test\\44.jpg"])
+#"/home/dataset/test/44.jpg"
 if args.trainmodel == "True":
     trainmodel()
 elif args.init == "True":
