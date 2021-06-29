@@ -1,3 +1,4 @@
+# Credit to - https://github.com/Gogul09/image-classification-python for the starting point for this script
 #-----------------------------------------
 # Initialize Main dataset
 #-----------------------------------------
