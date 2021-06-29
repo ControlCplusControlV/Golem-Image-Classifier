@@ -6,7 +6,6 @@ from yapapi.services import Service
 from yapapi.log import enable_default_logger
 from yapapi.payload import vm
 
-DATE_OUTPUT_PATH = "/golem/work/date.txt"
 REFRESH_INTERVAL_SEC = 5
 
 
