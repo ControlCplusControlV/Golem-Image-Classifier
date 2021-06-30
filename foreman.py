@@ -27,7 +27,7 @@ sys.path.append(str(examples_dir))
 
 
 NUM_INSTANCES = 1
-STARTING_TIMEOUT = timedelta(minutes=10)
+STARTING_TIMEOUT = timedelta(minutes=100)
 
 
 class SimpleService(Service):
@@ -37,23 +37,22 @@ class SimpleService(Service):
     @staticmethod
     async def get_payload():
         return await vm.repo(
-            image_hash="96f0e7fe6951dd3892b8e153a633734c5eca06ba93be369e602f4dca",
-#Python only hash 7a35f84bf8b5845dcf4773a13a3b98b6acbdc5e5e213e4f0106c51b0
-            min_mem_gib=0.5,
-            min_storage_gib=2.0,
+            image_hash="7a35f84bf8b5845dcf4773a13a3b98b6acbdc5e5e213e4f0106c51b0",
+            min_mem_gib=5,
+            min_storage_gib=7,
         )
 
     async def start(self):
         # handler responsible for starting the service
-        self._ctx.run("python3 imageclassifier.py --trainmodel True")
-        success = yield self._ctx.commit()
-        print("Model Trained : {success}")
+        self._ctx.run("usr/local/bin/python","imageclassifier.py", "--trainmodel", "True")
+        yield self._ctx.commit()
 
     async def run(self):
         # handler responsible for providing the required interactions while the service is running
+        print("Model Trained : Success!")
         while True:
             await asyncio.sleep(10)
-            self._ctx.run("python3 imageclassifier.py --predict /home/dataset/test/44.jpg")  # idx 0
+            self._ctx.run("usr/local/bin/python","imageclassifier.py" ,"--predict", "dataset/test/44.jpg")  # idx 0
 
             future_results = yield self._ctx.commit()
             results = await future_results
