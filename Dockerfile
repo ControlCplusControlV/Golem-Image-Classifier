@@ -11,4 +11,5 @@ RUN pip install opencv-python-headless
 RUN pip install h5py
 RUN pip install matplotlib
 RUN chmod +x golem/work/*
+WORKDIR golem/work
 ENTRYPOINT [ "sh" ]
