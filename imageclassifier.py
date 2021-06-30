@@ -85,7 +85,7 @@ def untar(fname, path):
 def installflowers17():
 	flowers17_url  = "http://www.robots.ox.ac.uk/~vgg/data/flowers/17/"
 	flowers17_name = "17flowers.tgz"
-	train_dir      = "/home/dataset"
+	train_dir      = "dataset"
 
 	if not os.path.exists(train_dir):
 		os.makedirs(train_dir + "/train")
@@ -133,9 +133,9 @@ def installflowers17():
 #------------------------------------
 images_per_class = 80
 fixed_size       = tuple((500, 500))
-train_path       = "/home/dataset/train"
-h5_data          = '/home/output/data.h5'
-h5_labels        = '/home/output/labels.h5'
+train_path       = "dataset/train"
+h5_data          = 'output/data.h5'
+h5_labels        = 'output/labels.h5'
 bins             = 8
 num_trees = 100
 test_size = 0.10
@@ -366,6 +366,7 @@ def predict(target):
     # display the output image
     #plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
     #plt.show()
+    print(train_labels[prediction])
     return train_labels[prediction]
 #predict([r"B:\\Golem Image Classifier\\dataset\\test\\44.jpg"])
 #"/home/dataset/test/44.jpg"
@@ -373,5 +374,5 @@ if args.trainmodel == "True":
     trainmodel()
 elif args.init == "True":
     installflowers17()
-elif args.predict == "True":
-    predict()
+elif args.predict != "":
+    predict(args.predict)
