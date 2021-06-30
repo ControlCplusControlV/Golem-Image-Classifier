@@ -1,16 +1,15 @@
-FROM ubuntu:21.04
-RUN apt-get -y update && apt-get -y upgrade
-RUN apt-get -y install python3
-RUN apt-get -y install python3-pip
-RUN apt-get install ffmpeg libsm6 libxext6  -y
-ADD requirements.txt .
-ADD imageclassifier.py .
-RUN mkdir /home/dataset/
-ADD dataset /home/dataset/
-RUN pip install -r requirements.txt
-RUN mkdir /home/output
-#RUN pip3 list --outdated --format=freeze | grep -v '^\-e' | cut -d = -f 1 | xargs -n1 pip3 install -U 
+FROM python:3.8-slim-buster
+#VOLUME golem/input
+RUN mkdir output
+RUN mkdir dataset
+COPY dataset dataset/
+COPY imageclassifier.py .
+RUN pip install urllib3
+RUN pip install sklearn
+RUN pip install numpy
+RUN pip install mahotas
+RUN pip install opencv-python-headless
+RUN pip install h5py
+RUN pip install matplotlib
 RUN chmod +x imageclassifier.py
-#RUN python3 imageclassifier.py --trainmodel True
-#RUN python3 imageclassifier.py --predict True
 ENTRYPOINT [ "sh" ]
