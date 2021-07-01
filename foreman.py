@@ -31,20 +31,19 @@ STARTING_TIMEOUT = timedelta(minutes=100)
 
 
 class SimpleService(Service):
-    SIMPLE_SERVICE = "imageclassifier.py"
-    SIMPLE_SERVICE_CTL = "imageclassifier.py"
+    SIMPLE_SERVICE = "/golem/work/imageclassifier.py"
 
     @staticmethod
     async def get_payload():
         return await vm.repo(
-            image_hash="1ef6a6054b91aba66559e3fa74739647f48db292d33eb2948048fe4d",
+            image_hash="255c262f0bd5ddbaf7e09d6dc045d2c8bfa2bdecb0b5a44303b5b3e7",
             min_mem_gib=5,
             min_storage_gib=7,
         )
 
     async def start(self):
         # handler responsible for starting the service
-        self._ctx.run("usr/local/bin/python","imageclassifier.py", "--trainmodel", "True")
+        self._ctx.run(self.SIMPLE_SERVICE, "--trainmodel", "True")
         yield self._ctx.commit()
 
     async def run(self):
@@ -52,7 +51,7 @@ class SimpleService(Service):
         print("Model Trained : Success!")
         while True:
             await asyncio.sleep(10)
-            self._ctx.run("usr/local/bin/python","imageclassifier.py" ,"--predict", "dataset/test/44.jpg")  # idx 0
+            self._ctx.run(self.SIMPLE_SERVICE, "--predict", "dataset/test/44.jpg")  # idx 0
 
             future_results = yield self._ctx.commit()
             results = await future_results
