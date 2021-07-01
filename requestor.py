@@ -36,7 +36,7 @@ class SimpleService(Service):
     @staticmethod
     async def get_payload():
         return await vm.repo(
-            image_hash="255c262f0bd5ddbaf7e09d6dc045d2c8bfa2bdecb0b5a44303b5b3e7",
+            image_hash="e353a1a59c208ea03585e55e9fa82498d8351ced4110bdf39a00b00a",
             min_mem_gib=5,
             min_storage_gib=7,
         )
