@@ -1,8 +1,0 @@
-urllib3
-sklearn
-numpy
-mahotas
-opencv-python
-opencv-contrib-python
-h5py
-matplotlib
