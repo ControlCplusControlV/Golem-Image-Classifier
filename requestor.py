@@ -57,24 +57,9 @@ class SimpleService(Service):
             results = await future_results
 
             print(f"stats: {results}")
-            '''
-            plot_filename = "".join(random.choice(string.ascii_letters) for _ in range(10)) + ".png"
-            print(
-                f"downloading plot: {plot} to {plot_filename}"
-            )
-            self._ctx.download_file(
-                plot, str(pathlib.Path(__file__).resolve().parent / plot_filename)
-            )
-            '''
             steps = self._ctx.commit()
             yield steps
             print("prediction made {steps}")
-'''
-    async def shutdown(self):
-        # handler reponsible for executing operations on shutdown
-        self._ctx.run(self.SIMPLE_SERVICE_CTL, "--stop")
-        yield self._ctx.commit()
-'''
 
 async def main(subnet_tag, driver=None, network=None):
     async with Golem(
