@@ -43,7 +43,7 @@ class SimpleService(Service):
 
     async def start(self):
         # handler responsible for starting the service
-        self._ctx.run(self.SIMPLE_SERVICE, "--trainmodel", "True")
+        self._ctx.run(self.SIMPLE_SERVICE, "--trainmodel")
         yield self._ctx.commit()
 
     async def run(self):
