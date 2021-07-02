@@ -1,5 +1,4 @@
 FROM python:3.8-slim
-VOLUME /golem/work
 COPY itjustworks /golem/work/output
 COPY dataset /golem/work/dataset/
 COPY imageclassifier.py /golem/work/
