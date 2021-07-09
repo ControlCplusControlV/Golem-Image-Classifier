@@ -8,7 +8,7 @@ import pathlib
 import random
 import string
 import sys
-
+from pathlib import Path
 import argparse
 from yapapi import (
     NoPaymentAccountError,
@@ -31,12 +31,12 @@ STARTING_TIMEOUT = timedelta(minutes=100)
 
 
 class SimpleService(Service):
-    SIMPLE_SERVICE = "/golem/work/imageclassifier.py"
+    SIMPLE_SERVICE = "/golem/run/imageclassifier.py"
 
     @staticmethod
     async def get_payload():
         return await vm.repo(
-            image_hash="255c262f0bd5ddbaf7e09d6dc045d2c8bfa2bdecb0b5a44303b5b3e7",
+            image_hash="e854610dfaa02035056780cf881b41ae672e1d7f9a8ec4461ede3b15",
             min_mem_gib=5,
             min_storage_gib=7,
         )
@@ -50,16 +50,19 @@ class SimpleService(Service):
         # handler responsible for providing the required interactions while the service is running
         print("Model Trained : Success!")
         while True:
-            await asyncio.sleep(10)
-            self._ctx.run(self.SIMPLE_SERVICE, "--predict", "dataset/test/44.jpg")  # idx 0
 
-            future_results = yield self._ctx.commit()
-            results = await future_results
-
-            print(f"stats: {results}")
-            steps = self._ctx.commit()
-            yield steps
-            print("prediction made {steps}")
+            task = input("What task do you wish to run? [predict/train] : ")
+            if task == "predict":
+                    imagepath = input("What is the name of the image you wish to identify : ")
+                    await asyncio.sleep(10)
+                    self._ctx.send_file(str(imagepath), str(f"/golem/work/{imagepath}"))
+                    print("Test Image Sent!")
+                    self._ctx.run(self.SIMPLE_SERVICE, "--predict", "golem/work/" + imagepath)  # idx 0
+                    future_results = yield self._ctx.commit()
+                    results = await future_results
+                    print(results[0].stdout.strip())
+            elif task == "train":
+                    print("test")
 
 async def main(subnet_tag, driver=None, network=None):
     async with Golem(
