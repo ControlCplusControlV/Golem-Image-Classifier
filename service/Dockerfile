@@ -1,5 +1,5 @@
 FROM python:3.8-slim
-VOLUME /golem/work/ 
+VOLUME /golem/work
 COPY itjustworks /golem/work/output
 COPY /h5/ /golem/run/h5/
 COPY imageclassifier.py /golem/run/
