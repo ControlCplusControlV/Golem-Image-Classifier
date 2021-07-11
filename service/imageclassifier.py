@@ -1,27 +1,8 @@
 #!/usr/local/bin/python
-# Credit to - https://github.com/Gogul09/image-classification-python for the starting point for this script
-# and as this contains the notic below in compliance with the MIT license in the above repo as substaintial portions 
-# of code are included
-'''
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-'''
-#-----------------------------------------
-# Initialize Main dataset
-#-----------------------------------------
+import numpy as np
+import scipy
+from sklearn.linear_model import SGDClassifier
+from sklearn.metrics import accuracy_score
 import os
 import datetime
 import tarfile
@@ -56,7 +37,8 @@ warnings.filterwarnings('ignore')
 #Define an arg parsers to build out a CLI
 parser = argparse.ArgumentParser()
 parser.add_argument("-i", "--init", type=str) # calls installflowers17
-parser.add_argument("-t", "--trainmodel", action="store_true") #Trainmodel
+parser.add_argument("-td", "--traindata", type=str) #Trainmodel
+parser.add_argument("-tl", "--trainlabels", type=str) #Trainmodel
 parser.add_argument("-p", "--predict", type=str) # predict(imagearray)
 
 args = parser.parse_args()
@@ -67,15 +49,14 @@ args = parser.parse_args()
 images_per_class = 80
 fixed_size       = tuple((500, 500))
 train_path       = "golem/work/dataset/train"
-h5_data          = '/golem/run/h5/data.h5'
-h5_labels        = '/golem/run/h5/labels.h5'
+h5_data          = 'h5/data.h5'
+h5_labels        = 'h5/labels.h5'
 bins             = 8
 num_trees = 100
 test_size = 0.10
 seed      = 9
 test_path  = "golem/work/dataset/test"
 scoring    = "accuracy"
-# feature-descriptor-1: Hu Moments
 def fd_hu_moments(image):
     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     feature = cv2.HuMoments(cv2.moments(image)).flatten()
@@ -101,16 +82,6 @@ def fd_histogram(image, mask=None):
     # return the histogram
     return hist.flatten()
 def trainmodel():
-    # create all the machine learning models
-    models = []
-    models.append(('LR', LogisticRegression(random_state=seed)))
-    models.append(('LDA', LinearDiscriminantAnalysis()))
-    models.append(('KNN', KNeighborsClassifier()))
-    models.append(('CART', DecisionTreeClassifier(random_state=seed)))
-    models.append(('RF', RandomForestClassifier(n_estimators=num_trees, random_state=seed)))
-    models.append(('NB', GaussianNB()))
-    models.append(('SVM', SVC(random_state=seed)))
-
     # variables to hold the results and names
     results = []
     names   = []
@@ -139,39 +110,55 @@ def trainmodel():
                                                                                             np.array(global_labels),
                                                                                             test_size=test_size,
                                                                                             random_state=seed)
-
-    print("[STATUS] splitted train and test data...")
-    print("Train data  : {}".format(trainDataGlobal.shape))
-    print("Test data   : {}".format(testDataGlobal.shape))
-    print("Train labels: {}".format(trainLabelsGlobal.shape))
-    print("Test labels : {}".format(testLabelsGlobal.shape))
-    # 10-fold cross validation
-    for name, model in models:
-        kfold = KFold(n_splits=10)
-        cv_results = cross_val_score(model, trainDataGlobal, trainLabelsGlobal, cv=kfold, scoring=scoring)
-        results.append(cv_results)
-        names.append(name)
-        msg = "%s: %f (%f)" % (name, cv_results.mean(), cv_results.std())
-        print(msg)
-
-    #-----------------------------------
-    # TESTING OUR MODEL
-    #-----------------------------------
-
-    # to visualize results
-    import matplotlib.pyplot as plt
-
     # create the model - Random Forests
-    clf  = RandomForestClassifier(n_estimators=num_trees, random_state=seed)
-
+    clf = SGDClassifier(alpha=.0001, loss='log', penalty='l2', n_jobs=-1,
+                          #shuffle=True, n_iter=10,
+                          verbose=1)
     # fit the training data to the model
-    clf.fit(trainDataGlobal, trainLabelsGlobal)
+    clf.partial_fit(trainDataGlobal, trainLabelsGlobal, classes=np.unique(trainLabelsGlobal))
+    print("Model Fit")
     pkl_file = "classifier.pkl"
     with open(pkl_file, 'wb') as file:
         pickle.dump(clf, file)
     return True
+def continuedTrain(h5data, h5labels):
+        # variables to hold the results and names
+    results = []
+    names   = []
+
+    # import the feature vector and trained labels
+    h5f_data  = h5py.File(h5_data, 'r')
+    h5f_label = h5py.File(h5_labels, 'r')
+
+    global_features_string = h5f_data['dataset_1']
+    global_labels_string   = h5f_label['dataset_1']
+
+    global_features = np.array(global_features_string)
+    global_labels   = np.array(global_labels_string)
+
+    h5f_data.close()
+    h5f_label.close()
+
+    # split the training and testing data
+    (trainDataGlobal, testDataGlobal, trainLabelsGlobal, testLabelsGlobal) = train_test_split(np.array(global_features),
+                                                                                            np.array(global_labels),
+                                                                                            test_size=test_size,
+                                                                                            random_state=seed)
+    # create the model - Random Forests
+    with open("classifier.pkl", 'rb') as model:
+        clf = pickle.load(model)
+    # fit the training data to the model
+    clf.partial_fit(trainDataGlobal, trainLabelsGlobal)
+    print("Model Fit")
+    pkl_file = "classifier.pkl"
+    with open(pkl_file, 'wb') as file:
+        pickle.dump(clf, file)
+    print("Model Trained Additionally!")
 def predict(target):
-    train_labels = os.listdir(train_path)
+    train_labels = ["daffodil", "snowdrop", "lilyvalley", "bluebell", "crocus",
+             "iris", "tigerlily", "tulip", "fritillary", "sunflower", 
+             "daisy", "coltsfoot", "dandelion", "cowslip", "buttercup",
+             "windflower", "pansy"]
 
     # sort the training labels
     train_labels.sort()
@@ -206,17 +193,17 @@ def predict(target):
     # show predicted label on image
     cv2.putText(image, train_labels[prediction], (20,30), cv2.FONT_HERSHEY_SIMPLEX, 1.0, (0,255,255), 3)
 
-    # display the output image
-    #plt.imshow(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
-    #plt.show()
     print(train_labels[prediction])
     return train_labels[prediction]
-#predict([r"B:\\Golem Image Classifier\\dataset\\test\\44.jpg"])
-#"/home/dataset/test/44.jpg"
-if args.trainmodel:
-    trainmodel()
 try:
-    if len(args.predict) >= 5:
-        predict(args.predict)
+    if len(args.traindata) > 3:
+        continuedTrain(args.traindata, args.trainlabels)
 except:
     pass
+try:
+    predict(args.predict)
+except:
+    pass
+
+#py partialTrain.py --traindata "h5/data.h5" --trainlabels "h5/labels.h5"
+#py partialTrain.py --predict "test2.jpg"
