@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-the requestor agent controlling and interacting with the "simple service"
+Below defines the requestor agent which then opens up a CLI interface
+to interact with the Image Classifier Service
 """
 import asyncio
 from datetime import datetime, timedelta, timezone
@@ -22,17 +23,12 @@ from yapapi.services import Service, ServiceState
 from yapapi.log import enable_default_logger, pluralize
 from yapapi.payload import vm
 
-examples_dir = pathlib.Path(__file__).resolve().parent.parent
-sys.path.append(str(examples_dir))
-
-
-
 NUM_INSTANCES = 1
 STARTING_TIMEOUT = timedelta(minutes=100)
 
 
-class SimpleService(Service):
-    SIMPLE_SERVICE = "/golem/run/imageclassifier.py"
+class ImageClassifier(Service):
+    imageClassifier = "/golem/run/imageclassifier.py"
 
     @staticmethod
     async def get_payload():
@@ -43,15 +39,22 @@ class SimpleService(Service):
         )
 
     async def start(self):
-        # handler responsible for starting the service
-        self._ctx.run(self.SIMPLE_SERVICE, "--predict", "/golem/work/test2.jpg")
+        '''
+        Runs an prediction test upon startup to verify everything is working,
+        this step is optional but was helpful when debugging and decided to leave
+        it in for those who choose to modify this, as it verifies prediction works
+        '''
+        self._ctx.run(self.imageClassifier, "--predict", "/golem/work/test2.jpg")
         yield self._ctx.commit()
 
     async def run(self):
-        # handler responsible for providing the required interactions while the service is running
-        print("Model Trained : Success!")
+        print("Service Successfully Initialized!")
         while True:
-
+            '''
+            Uses the user input function, and http webserver could be done for this but
+            as a lot of AI work is done on "deskside compute" I thought a CLI would be easier
+            for Data Scientists rather than a webserver interface
+            '''
             task = input("What task do you wish to run? [predict/train] : ")
             if task == "predict":
                     imagepath = input("What is the name of the image you wish to identify : ")
@@ -59,7 +62,7 @@ class SimpleService(Service):
                     self._ctx.send_file(str(imagepath), str(f"/golem/work/{imagepath}"))
                     print("Test Image Sent!")
                     testpath = "/golem/work/" + imagepath
-                    self._ctx.run(self.SIMPLE_SERVICE, "--predict", testpath)  # idx 0
+                    self._ctx.run(self.imageClassifier, "--predict", testpath)  
                     future_results = yield self._ctx.commit()
                     results = await future_results
                     print(results)
@@ -70,7 +73,7 @@ class SimpleService(Service):
                     labelpaths = "/golem/work/" + labelpath
                     self._ctx.send_file(str(datapath), str(datapaths))
                     self._ctx.send_file(str(labelpath), str(labelpaths))
-                    self._ctx.run(self.SIMPLE_SERVICE, "--traindata", datapaths, "--trainlabels", labelpaths) 
+                    self._ctx.run(self.imageClassifier, "--traindata", datapaths, "--trainlabels", labelpaths) 
                     print("Model Successfully Trained")
 
 async def main(subnet_tag, driver=None, network=None):
@@ -80,7 +83,10 @@ async def main(subnet_tag, driver=None, network=None):
         driver=driver,
         network=network,
     ) as golem:
-
+        '''
+        Most of the helper code from the Simple Service Model is kept in as the information provided
+        is very helpful, 
+        '''
         print(
             f"yapapi version: {yapapi_version}\n"
             f"Using subnet: {subnet_tag}, "
@@ -90,15 +96,13 @@ async def main(subnet_tag, driver=None, network=None):
 
         commissioning_time = datetime.now()
 
-        print(
-            f"starting {pluralize(NUM_INSTANCES, 'instance')}"
-        )
+        print(f"Starting the Image Classifier Service")
 
         # start the service
 
         cluster = await golem.run_service(
-            SimpleService,
-            num_instances=NUM_INSTANCES,
+            ImageClassifier,
+            num_instances=1,
             expiration=datetime.now(timezone.utc) + timedelta(minutes=120),
         )
 
@@ -111,34 +115,23 @@ async def main(subnet_tag, driver=None, network=None):
             return any([s for s in cluster.instances if s.is_available])
 
         def still_starting():
-            return len(cluster.instances) < NUM_INSTANCES or any(
+            return len(cluster.instances) < 1 or any(
                 [s for s in cluster.instances if s.state == ServiceState.starting]
             )
-
-        # wait until instances are started
-
         while still_starting() and datetime.now() < commissioning_time + STARTING_TIMEOUT:
             print(f"instances: {instances()}")
             await asyncio.sleep(5)
 
         if still_starting():
             raise Exception(f"Failed to start instances before {STARTING_TIMEOUT} elapsed :( ...")
-
-        print("All instances started :)")
-
-        # allow the service to run for a short while
-        # (and allowing its requestor-end handlers to interact with it)
-
         start_time = datetime.now()
 
         while datetime.now() < start_time + timedelta(minutes=2):
             print(f"instances: {instances()}")
-            await asyncio.sleep(5)
+            await asyncio.sleep(15)
 
         print(f"stopping instances")
         cluster.stop()
-
-        # wait for instances to stop
 
         cnt = 0
         while cnt < 10 and still_running():
@@ -151,7 +144,7 @@ async def main(subnet_tag, driver=None, network=None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     now = datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-    parser.set_defaults(log_file=f"simple-service-yapapi-{now}.log")
+    parser.set_defaults(log_file=f"imageclassifier-service-yapapi-{now}.log")
     args = parser.parse_args()
 
     # This is only required when running on Windows with Python prior to 3.8:
@@ -172,6 +165,10 @@ if __name__ == "__main__":
     try:
         loop.run_until_complete(task)
     except NoPaymentAccountError as e:
+        '''
+        Error handling also kept in as new people using this who may have improperly
+        setup their requestor node can benefit from it
+        '''
         handbook_url = (
             "https://handbook.golem.network/requestor-tutorials/"
             "flash-tutorial-of-requestor-development"
@@ -194,7 +191,7 @@ if __name__ == "__main__":
         try:
             loop.run_until_complete(task)
             print(
-                f"{TEXT_COLOR_YELLOW}Shutdown completed, thank you for waiting!{TEXT_COLOR_DEFAULT}"
+                f"Shutdown completed, thank you for waiting!"
             )
         except (asyncio.CancelledError, KeyboardInterrupt):
             pass
