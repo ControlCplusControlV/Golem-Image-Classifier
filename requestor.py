@@ -9,6 +9,7 @@ import random
 import string
 import sys
 from pathlib import Path
+import time
 import argparse
 from yapapi import (
     NoPaymentAccountError,
@@ -36,14 +37,14 @@ class SimpleService(Service):
     @staticmethod
     async def get_payload():
         return await vm.repo(
-            image_hash="e854610dfaa02035056780cf881b41ae672e1d7f9a8ec4461ede3b15",
+            image_hash="baa76c7c825808b8b2b14c7e091ec8be385e05a5781fabd04f2a87ee",
             min_mem_gib=5,
             min_storage_gib=7,
         )
 
     async def start(self):
         # handler responsible for starting the service
-        self._ctx.run(self.SIMPLE_SERVICE, "--trainmodel")
+        self._ctx.run(self.SIMPLE_SERVICE, "--predict", "/golem/work/test2.jpg")
         yield self._ctx.commit()
 
     async def run(self):
@@ -57,16 +58,24 @@ class SimpleService(Service):
                     await asyncio.sleep(10)
                     self._ctx.send_file(str(imagepath), str(f"/golem/work/{imagepath}"))
                     print("Test Image Sent!")
-                    self._ctx.run(self.SIMPLE_SERVICE, "--predict", "golem/work/" + imagepath)  # idx 0
+                    testpath = "/golem/work/" + imagepath
+                    self._ctx.run(self.SIMPLE_SERVICE, "--predict", testpath)  # idx 0
                     future_results = yield self._ctx.commit()
                     results = await future_results
-                    print(results[0].stdout.strip())
+                    print(results)
             elif task == "train":
+                    datapath = input("What is the name of the h5 data file :")
+                    labelpath = input("What is the name of the h5 labels file :")
+                    datapaths = "/golem/work/" + datapath
+                    labelpaths = "/golem/work/" + labelpath
+                    self._ctx.send_file(str(datapath), str(datapaths))
+                    self._ctx.send_file(str(labelpath), str(labelpaths))
+                    self._ctx.run(self.SIMPLE_SERVICE, "--traindata", datapaths, "--trainlabels", labelpaths) 
                     print("test")
 
 async def main(subnet_tag, driver=None, network=None):
     async with Golem(
-        budget=10.0,
+        budget=1.0,
         subnet_tag=subnet_tag,
         driver=driver,
         network=network,
