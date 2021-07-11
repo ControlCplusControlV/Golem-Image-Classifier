@@ -71,7 +71,7 @@ class SimpleService(Service):
                     self._ctx.send_file(str(datapath), str(datapaths))
                     self._ctx.send_file(str(labelpath), str(labelpaths))
                     self._ctx.run(self.SIMPLE_SERVICE, "--traindata", datapaths, "--trainlabels", labelpaths) 
-                    print("test")
+                    print("Model Successfully Trained")
 
 async def main(subnet_tag, driver=None, network=None):
     async with Golem(
