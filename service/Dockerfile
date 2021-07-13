@@ -1,15 +1,17 @@
 FROM python:3.8-slim
-VOLUME /golem/work
-COPY itjustworks /golem/work/output
-COPY /h5/ /golem/run/h5/
+VOLUME /golem/work 
+COPY /model/ /golem/work/model/
+COPY /dataset/ /golem/work/dataset/
 COPY imageclassifier.py /golem/run/
-RUN pip install urllib3
-RUN pip install sklearn
+COPY test2.jpg /golem/work
 RUN pip install numpy
-RUN pip install mahotas
-RUN pip install opencv-python-headless
-RUN pip install h5py
-RUN pip install matplotlib
+RUN pip install keras
+RUN pip install tensorflow
+RUN pip install argparse
+RUN pip install sklearn
+RUN pip install Pillow
 RUN chmod +rwx /golem/work/*
 RUN chmod +rwx /golem/run/*
+RUN chmod +rwx /golem/run/imageclassifier.py
+WORKDIR /golem/run
 ENTRYPOINT [ "sh" ]
