@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-the requestor agent controlling and interacting with the "simple service"
+the requestor agent controlling and interacting with Image Classifier
 """
 import asyncio
 from datetime import datetime, timedelta, timezone
@@ -8,8 +8,7 @@ import pathlib
 import random
 import string
 import sys
-from pathlib import Path
-import time
+
 import argparse
 from yapapi import (
     NoPaymentAccountError,
@@ -31,46 +30,48 @@ NUM_INSTANCES = 1
 STARTING_TIMEOUT = timedelta(minutes=100)
 
 
-class SimpleService(Service):
-    SIMPLE_SERVICE = "/golem/run/imageclassifier.py"
+class ImageClassifier(Service):
+    CLASSIFIER = "/golem/work/imageclassifier.py"
 
     @staticmethod
     async def get_payload():
         return await vm.repo(
-            image_hash="8b79b99f0f9a399a35d87d4d2933217df6346e9b28328a54e433924c",
+            image_hash="cd62cbd4aa54d111abf29d09cb229d7d488bd18a03b8b16da28a53f7",
             min_mem_gib=5,
             min_storage_gib=7,
         )
 
     async def start(self):
-        # handler responsible for starting the service
-        self._ctx.run(self.SIMPLE_SERVICE, "--predict", "/golem/work/data/test", "--batch", "1")
-        yield self._ctx.commit()
-
+        """
+        Setup the volume so that it will play nice with the classifier and all the needed data
+        is stored there. Send over the model, and make the needed dirs 
+        """
+        self._ctx.send_file("/model/saved_model.pb", "/golem/work/model/")
+        print("Model Transferred")
+        self._ctx.send_file("/model/keras_metadata.pb", "/golem/work/model/")
+        print("Metadata Transferred")
+        self._ctx.send_file("/model/variables/variables.index", "/golem/work/model/variables/")
+        print("Variables Transferred")
+        self._ctx.send_file("/model/variables/variables.data-00000-of-00001", "/golem/work/model/variables/")
+        print("Variable Data Transferred")
     async def run(self):
         # handler responsible for providing the required interactions while the service is running
         print("Model Trained : Success!")
         while True:
-
             task = input("What task do you wish to run? [predict/train] : ")
             if task == "predict":
                     imagepath = input("What is the name of the image you wish to identify : ")
                     await asyncio.sleep(10)
-                    self._ctx.send_file(str(imagepath), str(f"/golem/work/dataset/test/Unknown/{imagepath}"))
+                    self._ctx.send_file(str(imagepath), str(f"/golem/work/dataset/test/"))
                     print("Test Image Sent!")
-                    testpath = "/golem/work/" + imagepath
                     self._ctx.run(self.SIMPLE_SERVICE, "--predict", "/golem/work/dataset/test", "--batch", "1")
                     future_results = yield self._ctx.commit()
                     results = await future_results
                     print(results)
             elif task == "train":
-                    datapath = input("What is the name of the h5 data file :")
-                    labelpath = input("What is the name of the h5 labels file :")
-                    datapaths = "/golem/work/" + datapath
-                    labelpaths = "/golem/work/" + labelpath
-                    self._ctx.send_file(str(datapath), str(datapaths))
-                    self._ctx.send_file(str(labelpath), str(labelpaths))
-                    self._ctx.run(self.SIMPLE_SERVICE, "--traindata", datapaths, "--trainlabels", labelpaths) 
+                    datapath = input("What is the name of the training data folder :")
+                    self._ctx.send_file(str(datapath), str("/golem/work/dataset/train"))
+                    self._ctx.run(self.SIMPLE_SERVICE, "--trainloc", "/golem/work/dataset/train") 
                     future_results = yield self._ctx.commit()
                     results = await future_results
                     print(results)
@@ -78,7 +79,7 @@ class SimpleService(Service):
 
 async def main(subnet_tag, driver=None, network=None):
     async with Golem(
-        budget=0.1,
+        budget=10.0,
         subnet_tag=subnet_tag,
         driver=driver,
         network=network,
@@ -100,7 +101,7 @@ async def main(subnet_tag, driver=None, network=None):
         # start the service
 
         cluster = await golem.run_service(
-            SimpleService,
+            ImageClassifier,
             num_instances=NUM_INSTANCES,
             expiration=datetime.now(timezone.utc) + timedelta(minutes=120),
         )
@@ -127,6 +128,7 @@ async def main(subnet_tag, driver=None, network=None):
         if still_starting():
             raise Exception(f"Failed to start instances before {STARTING_TIMEOUT} elapsed :( ...")
 
+        print("All instances started :)")
 
         # allow the service to run for a short while
         # (and allowing its requestor-end handlers to interact with it)
@@ -196,7 +198,7 @@ if __name__ == "__main__":
         try:
             loop.run_until_complete(task)
             print(
-                f"{TEXT_COLOR_YELLOW}Shutdown completed, thank you for waiting!{TEXT_COLOR_DEFAULT}"
+                f"Shutdown completed, thank you for waiting!"
             )
         except (asyncio.CancelledError, KeyboardInterrupt):
             pass
