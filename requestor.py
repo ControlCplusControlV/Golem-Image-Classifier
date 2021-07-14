@@ -21,10 +21,6 @@ from yapapi.services import Service, ServiceState
 from yapapi.log import enable_default_logger, pluralize
 from yapapi.payload import vm
 
-examples_dir = pathlib.Path(__file__).resolve().parent.parent
-sys.path.append(str(examples_dir))
-
-
 
 NUM_INSTANCES = 1
 STARTING_TIMEOUT = timedelta(minutes=100)
