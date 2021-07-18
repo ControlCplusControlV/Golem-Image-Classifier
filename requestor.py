@@ -26,15 +26,15 @@ NUM_INSTANCES = 1
 STARTING_TIMEOUT = timedelta(minutes=100)
 
 
-class ImageClassifier(Service):
-    CLASSIFIER = "/golem/work/imageclassifier.py"
+class ImageClassifierService(Service):
+    CLASSIFIER = "/golem/run/imageclassifier.py"
 
     @staticmethod
     async def get_payload():
         return await vm.repo(
-            image_hash="4cb97b8b0961fdf2a1953821b183fa9bc7fe1eadbf068cee99eb6249 ",
-            min_mem_gib=5,
-            min_storage_gib=7,
+            image_hash="194a3446c79d2b7ded8a2aadf87256411b68a4a86ce6af30ac9d32cc",
+            min_mem_gib=8,
+            min_storage_gib=20,
         )
 
     async def start(self):
@@ -42,32 +42,47 @@ class ImageClassifier(Service):
         Setup the volume so that it will play nice with the classifier and all the needed data
         is stored there. Send over the model, and make the needed dirs 
         """
-        self._ctx.send_file("/model/saved_model.pb", "/golem/work/model/")
+        
+        status = self._ctx.send_file("model.tar.gz", "/golem/work/model.tar.gz")
+        status = yield self._ctx.commit()
+        transfer = await status
         print("Model Transferred")
-        self._ctx.send_file("/model/keras_metadata.pb", "/golem/work/model/")
-        print("Metadata Transferred")
-        self._ctx.send_file("/model/variables/variables.index", "/golem/work/model/variables/")
-        print("Variables Transferred")
-        self._ctx.send_file("/model/variables/variables.data-00000-of-00001", "/golem/work/model/variables/")
-        print("Variable Data Transferred")
+        self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/", "-xzvf", "/golem/work/model.tar.gz")
+        zipped = yield self._ctx.commit()
+        finalized = await zipped
+        # Next up set up some folders in the volume so the classifier can identify it
+        self._ctx.run("/bin/mkdir", "/golem/work/dataset")
+        dataset = yield self._ctx.commit()
+        datasetf = await dataset
+        self._ctx.run("/bin/mkdir", "/golem/work/dataset/test")
+        test = yield self._ctx.commit()
+        testf = await test
+        self._ctx.run("/bin/mkdir", "/golem/work/dataset/test/Unknown")
+        utest = yield self._ctx.commit()
+        utestf = await utest
+        self._ctx.run("/bin/ls", "/golem/work/dataset/test")
+        files = yield self._ctx.commit()
+        rfiles = await files
+        print(rfiles)
+        
     async def run(self):
-        # handler responsible for providing the required interactions while the service is running
-        print("Model Trained : Success!")
         while True:
             task = input("What task do you wish to run? [predict/train] : ")
             if task == "predict":
                     imagepath = input("What is the name of the image you wish to identify : ")
                     await asyncio.sleep(10)
-                    self._ctx.send_file(str(imagepath), str(f"/golem/work/dataset/test/"))
+                    self._ctx.send_file(str(imagepath), str("/golem/work/dataset/test/Unknown/" + imagepath))
+                    send = yield self._ctx.commit()
+                    sendf = await send
                     print("Test Image Sent!")
-                    self._ctx.run(self.SIMPLE_SERVICE, "--predict", "/golem/work/dataset/test", "--batch", "1")
+                    self._ctx.run(self.CLASSIFIER, "--predict", "/golem/work/dataset/test", "--batch", "1")
                     future_results = yield self._ctx.commit()
                     results = await future_results
                     print(results)
             elif task == "train":
                     datapath = input("What is the name of the training data folder :")
                     self._ctx.send_file(str(datapath), str("/golem/work/dataset/train"))
-                    self._ctx.run(self.SIMPLE_SERVICE, "--trainloc", "/golem/work/dataset/train") 
+                    self._ctx.run(self.CLASSIFIER, "--trainloc", "/golem/work/dataset/train") 
                     future_results = yield self._ctx.commit()
                     results = await future_results
                     print(results)
@@ -75,7 +90,7 @@ class ImageClassifier(Service):
 
 async def main(subnet_tag, driver=None, network=None):
     async with Golem(
-        budget=10.0,
+        budget=5.00,
         subnet_tag=subnet_tag,
         driver=driver,
         network=network,
@@ -97,7 +112,7 @@ async def main(subnet_tag, driver=None, network=None):
         # start the service
 
         cluster = await golem.run_service(
-            ImageClassifier,
+            ImageClassifierService,
             num_instances=NUM_INSTANCES,
             expiration=datetime.now(timezone.utc) + timedelta(minutes=120),
         )
