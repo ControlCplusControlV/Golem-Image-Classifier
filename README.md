@@ -4,7 +4,7 @@ This service was designed for the bounty put out by Golem as seen [here](https:/
 
 ## Using the Service
 
-Clone this repo into the folder of your choice, the main componet needed for testing is the requestor.py script, but the entire service code is included in the service folder if you need to check something. You also need to download the [model](google.com) and the [additional training set]() in order to complete the demo. Leave both of them in their respective .tar.gz's inside the folder where you plan to run your requestor script. When the script is run it should startup with some yagna negotiation dialog before continuing into a prompt. Please note this can take some time as the model is around 550MB and must be transfered to the provider before the service can begin. Then the prompt shown below will appear.
+Clone this repo into the folder of your choice, the main componet needed for testing is the requestor.py script, but the entire service code is included in the service folder if you need to check something. You also need to download the [model](https://mega.nz/file/56wTCQJA#lC6VrHFuC8Sc6xgYcOf4A9ufyGnIsVFofoaUR3ETvUI) and the [additional training set](https://mega.nz/file/gyhxBSJY#EHAdZQygGMlX9etFrubc9zc9ePosQWTh0s-6poZEUns) in order to complete the demo. Leave both of them in their respective .tar.gz's inside the folder where you plan to run your requestor script. When the script is run it should startup with some yagna negotiation dialog before continuing into a prompt. Please note this can take some time as the model is around 550MB and must be transfered to the provider before the service can begin. Then the prompt shown below will appear.
 
 ```
 What task do you wish to run? [predict/train] : 
