@@ -78,14 +78,30 @@ class ImageClassifierService(Service):
                     self._ctx.run(self.CLASSIFIER, "--predict", "/golem/work/dataset/test", "--batch", "1")
                     future_results = yield self._ctx.commit()
                     results = await future_results
-                    print(results)
+                    classes = ["bluebell", "buttercup", "coltsfoot", "cowslip"]
+                    prediction = results[0].stdout.strip()
+                    print(classes[int(list(prediction.split(".")[1])[2])])
             elif task == "train":
                     datapath = input("What is the name of the training data folder :")
-                    self._ctx.send_file(str(datapath), str("/golem/work/dataset/train"))
+                    #Send in the dataset as a zipped file
+                    self._ctx.send_file(str(datapath), str("/golem/work/dataset/train/" + datapath))
+                    data = "/golem/work/dataset/train/" + datapath
+                    self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/dataset/train/", "-xzvf", data)
+                    zipped = yield self._ctx.commit()
+                    finalized = await zipped
+                    #Now data is unzipped, next it executes
                     self._ctx.run(self.CLASSIFIER, "--trainloc", "/golem/work/dataset/train") 
                     future_results = yield self._ctx.commit()
                     results = await future_results
-                    print(results)
+                    #next its awaited, once this completes the model is trained
+                    #but, some cleanup must be done
+                    self._ctx.run("/bin/rm", "-rf", "/golem/work/dataset/train")
+                    deletion = yield self._ctx.commit()
+                    ds = await deletion
+                    # Model Cleared, so going to re-create the folder for future training
+                    #self._ctx.run("/bin/mkdir", "/golem/work/dataset/test")
+                    #test = yield self._ctx.commit()
+                    #testf = await test
                     print("Model Successfully Trained")
 
 async def main(subnet_tag, driver=None, network=None):
