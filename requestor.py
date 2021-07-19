@@ -82,7 +82,7 @@ class ImageClassifierService(Service):
                     prediction = results[0].stdout.strip()
                     print(classes[int(list(prediction.split(".")[1])[2])])
             elif task == "train":
-                    datapath = input("What is the name of the training data folder :")
+                    datapath = input("What is the name of the training data folder : ")
                     #Send in the dataset as a zipped file
                     self._ctx.send_file(str(datapath), str("/golem/work/dataset/train/" + datapath))
                     data = "/golem/work/dataset/train/" + datapath
