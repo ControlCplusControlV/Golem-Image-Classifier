@@ -10,9 +10,9 @@ Clone this repo into the folder of your choice, the main componet needed for tes
 What task do you wish to run? [predict/train] : 
 ```
 ### Predict
-if you answer "predict" it will continue asking for an input image, jpg is the current supported format. To run a prediction provide the name of a jpg inside of the current directory, in the example case, "test2.jpg". Once this image name is supplied it the requestor will send it out the provider and you will get a response back showing a label like below in the case of test2.jpg
+if you answer "predict" it will continue asking for an input image, jpg is the current supported format. To run a prediction provide the name of a jpg inside of the current directory, in the example case, "Bluebell.jpg". Once this image name is supplied it the requestor will send it out the provider and you will get a response back showing a label like below in the case of Bluebell.jpg
 ```
-cowbell
+Bluebell
 ```
 
 ### Train
