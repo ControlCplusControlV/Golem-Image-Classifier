@@ -162,7 +162,7 @@ async def main(subnet_tag, driver=None, network=None):
 
         start_time = datetime.now()
 
-        while datetime.now() < start_time + timedelta(minutes=2):
+        while datetime.now() < start_time + timedelta(minutes=120): # 2 hour timeout 
             print(f"instances: {instances()}")
             await asyncio.sleep(5)
 
