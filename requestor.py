@@ -28,7 +28,7 @@ STARTING_TIMEOUT = timedelta(minutes=100)
 
 class ImageClassifierService(Service):
     CLASSIFIER = "/golem/run/ImageClassification.py"
-    CLASSIFIERSERVICE = "/golem/run/ClassifierClient.py"
+    CLASSIFIERCLIENT = "/golem/run/ClassifierClient.py"
     @staticmethod
     async def get_payload():
         return await vm.repo(
@@ -42,29 +42,22 @@ class ImageClassifierService(Service):
         Setup the volume so that it will play nice with the classifier and all the needed data
         is stored there. Send over the model, and make the needed dirs 
         """
-        
-        status = self._ctx.send_file("model.tar.gz", "/golem/work/model.tar.gz")
-        status = yield self._ctx.commit()
-        transfer = await status
-        print("Model Transferred")
-        self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/", "-xzvf", "/golem/work/model.tar.gz")
+        datapath = input("What is the name of the dataset to send over? : ")
+        #Send in the dataset as a zipped file
+        self._ctx.send_file(str(datapath), str("/golem/work/" + datapath))
+        data = "/golem/work/" + datapath
+        self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/", "-xzvf", data)
         zipped = yield self._ctx.commit()
         finalized = await zipped
         # Next up set up some folders in the volume so the classifier can identify it
-        self._ctx.run("/bin/mkdir", "/golem/work/dataset")
-        dataset = yield self._ctx.commit()
-        datasetf = await dataset
-        self._ctx.run("/bin/mkdir", "/golem/work/dataset/test")
-        test = yield self._ctx.commit()
-        testf = await test
-        self._ctx.run("/bin/mkdir", "/golem/work/dataset/test/Unknown")
-        utest = yield self._ctx.commit()
-        utestf = await utest
-        self._ctx.run("/bin/ls", "/golem/work/dataset/test")
-        files = yield self._ctx.commit()
-        rfiles = await files
-        print(rfiles)
-        
+        self._ctx.run("/bin/ls", "/golem/work/dataset")
+        status = yield self._ctx.commit()
+        finalized = await status
+        print(finalized)
+        #Now data is unzipped, next it executes
+        self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/dataset/train", "-v", "/golem/work/dataset/valid", "-c", "dog", "cat", "monkey", "cow", "&") 
+        future_results = yield self._ctx.commit()
+        results = await future_results
     async def run(self):
         while True:
             task = input("What task do you wish to run? [predict/train] : ")
@@ -75,12 +68,12 @@ class ImageClassifierService(Service):
                     send = yield self._ctx.commit()
                     sendf = await send
                     print("Test Image Sent!")
-                    self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/dataset/train","-v" ,"/golem/work/dataset/valid", "-c","dog","cat","monkey","cow")
+                    self._ctx.run(self.CLASSIFIERCLIENT, "-p", "/golem/work/dataset/test","-c","dog","cat","monkey","cow")
                     future_results = yield self._ctx.commit()
                     results = await future_results
-                    classes = ["bluebell", "buttercup", "coltsfoot", "cowslip"]
                     prediction = results[0].stdout.strip()
-                    print(classes[int(list(prediction.split(".")[1])[2])])
+                    print(prediction)
+                    #print(classes[int(list(prediction.split(".")[1])[2])])
             elif task == "train":
                     datapath = input("What is the name of the training data folder : ")
                     #Send in the dataset as a zipped file
@@ -90,7 +83,7 @@ class ImageClassifierService(Service):
                     zipped = yield self._ctx.commit()
                     finalized = await zipped
                     #Now data is unzipped, next it executes
-                    self._ctx.run(self.CLASSIFIER, "--trainloc", "/golem/work/dataset/train") 
+                    self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/dataset/train", "-v", "/golem/work/dataset/valid", "-c","dog","cat","monkey","cow") 
                     future_results = yield self._ctx.commit()
                     results = await future_results
                     #next its awaited, once this completes the model is trained
@@ -98,10 +91,6 @@ class ImageClassifierService(Service):
                     self._ctx.run("/bin/rm", "-rf", "/golem/work/dataset/train")
                     deletion = yield self._ctx.commit()
                     ds = await deletion
-                    # Model Cleared, so going to re-create the folder for future training
-                    #self._ctx.run("/bin/mkdir", "/golem/work/dataset/test")
-                    #test = yield self._ctx.commit()
-                    #testf = await test
                     print("Model Successfully Trained")
 
 async def main(subnet_tag, driver=None, network=None):
