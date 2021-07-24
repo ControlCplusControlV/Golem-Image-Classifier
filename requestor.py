@@ -42,6 +42,9 @@ class ImageClassifierService(Service):
         Setup the volume so that it will play nice with the classifier and all the needed data
         is stored there. Send over the model, and make the needed dirs 
         """
+        self._ctx.send_file(str("vgg16.h5"), str("/golem/work/vgg16.h5"))
+        sent = yield self._ctx.commit()
+        finished = await sent
         datapath = input("What is the name of the dataset to send over? : ")
         #Send in the dataset as a zipped file
         self._ctx.send_file(str(datapath), str("/golem/work/" + datapath))
@@ -55,9 +58,8 @@ class ImageClassifierService(Service):
         finalized = await status
         print(finalized)
         #Now data is unzipped, next it executes
-        self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/dataset/train", "-v", "/golem/work/dataset/valid", "-c", "dog", "cat", "monkey", "cow", "&") 
-        future_results = yield self._ctx.commit()
-        results = await future_results
+        self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/dataset/train", "-v", "/golem/work/dataset/valid", "-c", "dog", "cat", "monkey", "cow") 
+  	# Awaiting this doesn't seem to work suprisingly
     async def run(self):
         while True:
             task = input("What task do you wish to run? [predict/train] : ")
@@ -95,7 +97,7 @@ class ImageClassifierService(Service):
 
 async def main(subnet_tag, driver=None, network=None):
     async with Golem(
-        budget=5.00,
+        budget=4.00,
         subnet_tag=subnet_tag,
         driver=driver,
         network=network,
