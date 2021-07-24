@@ -38,8 +38,7 @@ def buildModel(train_path, valid_path, classes):
             layer.trainable = False
         model.add(Dense(4, activation='softmax'))
         model.compile(Adam(lr=0.07), loss='categorical_crossentropy', metrics=['accuracy'])
-        model.fit_generator(train_batches, steps_per_epoch=1, 
-                            validation_data=valid_batches, validation_steps=1, epochs=30, verbose=2)
+        model.fit_generator(train_batches, steps_per_epoch=1,validation_data=valid_batches, validation_steps=1, epochs=30, verbose=2)
         return model
 class ClassifierService(rpyc.Service):
     def exposed_predict(self, classes, testloc):
@@ -51,6 +50,13 @@ class ClassifierService(rpyc.Service):
         predictions = np.array(predictions.argmax(axis=1))
         #print(test_labels) Ignored because its wrong
         return predictions
+    def exposed_train(self, classes, trainloc, validloc):
+        model = server.fmodel
+        train_batches = ImageDataGenerator().flow_from_directory(trainloc, target_size=(224,224), classes=classes, batch_size=10)
+        valid_batches = ImageDataGenerator().flow_from_directory(validloc, target_size=(224,224), classes=classes, batch_size=4)
+        model.fit_generator(train_batches, steps_per_epoch=1,validation_data=valid_batches, validation_steps=1, epochs=30, verbose=2)
+        server.fmodel = model
+        return True
         
 #model = buildModel(train_path, valid_path, ['dog','cat','monkey','cow'])
 
