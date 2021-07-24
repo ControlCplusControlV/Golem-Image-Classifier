@@ -75,7 +75,7 @@ class ImageClassifierService(Service):
                     send = yield self._ctx.commit()
                     sendf = await send
                     print("Test Image Sent!")
-                    self._ctx.run(self.CLASSIFIER, "--predict", "/golem/work/dataset/test", "--batch", "1")
+                    self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/dataset/train","-v" ,"/golem/work/dataset/valid", "-c","dog","cat","monkey","cow")
                     future_results = yield self._ctx.commit()
                     results = await future_results
                     classes = ["bluebell", "buttercup", "coltsfoot", "cowslip"]
