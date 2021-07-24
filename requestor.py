@@ -27,7 +27,7 @@ STARTING_TIMEOUT = timedelta(minutes=100)
 
 
 class ImageClassifierService(Service):
-    CLASSIFIER = "/golem/run/imageclassifier.py"
+    CLASSIFIER = "/golem/run/ImageClassification.py"
 
     @staticmethod
     async def get_payload():
