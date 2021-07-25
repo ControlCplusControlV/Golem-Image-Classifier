@@ -13,6 +13,7 @@ from keras.layers.normalization import BatchNormalization
 from keras.layers.convolutional import *
 from sklearn.metrics import confusion_matrix
 import itertools
+import os
 import argparse
 import rpyc
 from rpyc.utils.server import ThreadedServer
@@ -20,7 +21,8 @@ from threading import Thread
 train_path = 'cats-dogs-monkeys-cows/train'
 valid_path = 'cats-dogs-monkeys-cows/valid'
 test_path = 'cats-dogs-monkeys-cows/test'
-def buildModel(train_path, valid_path, classes):
+class ClassifierService(rpyc.Service):
+    def exposed_buildModel(self,train_path, valid_path, classes):
         train_batches = ImageDataGenerator().flow_from_directory(train_path, target_size=(224,224), classes=classes, batch_size=10)
         valid_batches = ImageDataGenerator().flow_from_directory(valid_path, target_size=(224,224), classes=classes, batch_size=4)
 
@@ -28,7 +30,7 @@ def buildModel(train_path, valid_path, classes):
 
         train_batches.class_indices
 
-        vgg16_model = keras.applications.vgg16.VGG16()
+        vgg16_model = keras.applications.vgg16.VGG16(weights="/golem/work/vgg16.h5")
 
         model = Sequential()
         for i in vgg16_model.layers:
@@ -39,8 +41,8 @@ def buildModel(train_path, valid_path, classes):
         model.add(Dense(4, activation='softmax'))
         model.compile(Adam(lr=0.07), loss='categorical_crossentropy', metrics=['accuracy'])
         model.fit_generator(train_batches, steps_per_epoch=1,validation_data=valid_batches, validation_steps=1, epochs=30, verbose=2)
-        return model
-class ClassifierService(rpyc.Service):
+        server.fmodel = model
+        return True
     def exposed_predict(self, classes, testloc):
         model = server.fmodel
         test_batches = ImageDataGenerator().flow_from_directory(testloc, target_size=(224,224), classes=["Unknown"], batch_size=1,save_format='jpg')
@@ -62,31 +64,11 @@ class ClassifierService(rpyc.Service):
 
 
 if __name__ == "__main__":
-    #Main Runtime loop
-    parser = argparse.ArgumentParser()
-    #Required Args to train a model
-    parser.add_argument("-v", "--validationpath", type=str) 
-    parser.add_argument("-t", "--trainpath", type=str) 
-    parser.add_argument("-c", "--classes", nargs='+')
-    #Batch can be changed in theory, but it really only makes sense on very powerful machines
-    #So I figure those who need it will see this and go change it
-
-    args = parser.parse_args()
-    if args.validationpath == None:
-        print("Please Provide a Validation Path, , via -v <path>")
-    if args.trainpath == None:
-        print("Please Provide a Training Path, via -t <path>")
-    if args.validationpath == None:
-        print("Please Provide Classes Path, via -c <array>")
-    print("{args.classes}")
-    fModel = buildModel(args.trainpath, args.validationpath, args.classes)
     # Now time to start the server
     server = ThreadedServer(ClassifierService, port = 12345)
     # Attach model to server
-    server.fmodel = fModel
     t = Thread(target = server.start)
     t.daemon = True
     t.start()
     t.join()
-    #With model built, 
 
