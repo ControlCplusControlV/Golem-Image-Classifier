@@ -1,9 +1,11 @@
 #!/usr/local/bin/python
 import rpyc
+from rpyc.utils import *
+from rpyc.core.service import *
 import argparse
 if __name__ == "__main__":
     # Initialize a Connection to the Model
-    conn = rpyc.connect("localhost", 12345)
+    conn = rpyc.utils.factory.unix_connect('./uds_socket')
     conn._config['sync_request_timeout'] = None
     c = conn.root
     parser = argparse.ArgumentParser()
