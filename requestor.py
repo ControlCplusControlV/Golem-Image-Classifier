@@ -32,7 +32,7 @@ class ImageClassifierService(Service):
     @staticmethod
     async def get_payload():
         return await vm.repo(
-            image_hash="d5e40f3cdd5c95495a70dc33b319d4ae1ee83a94d728c8f2de3b4e61",
+            image_hash="af6cb3c0fb4321a7924ea6938a92af8e0fec2420ccd6f929a08e2ee0",
             min_mem_gib=8,
             min_storage_gib=20,
         )
