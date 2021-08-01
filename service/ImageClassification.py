@@ -1,4 +1,3 @@
-#!/usr/local/bin/python
 import numpy as np
 import keras
 from keras import backend as k
@@ -12,6 +11,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.layers.normalization import BatchNormalization
 from keras.layers.convolutional import *
 from sklearn.metrics import confusion_matrix
+from rpyc.core.service import *
 import itertools
 import os
 import argparse
@@ -65,7 +65,8 @@ class ClassifierService(rpyc.Service):
 
 if __name__ == "__main__":
     # Now time to start the server
-    server = ThreadedServer(ClassifierService, port = 12345)
+    
+    server = ThreadedServer(ClassifierService, socket_path='./uds_socket')
     # Attach model to server
     t = Thread(target = server.start)
     t.daemon = True
