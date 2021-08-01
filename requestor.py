@@ -58,9 +58,12 @@ class ImageClassifierService(Service):
         finalized = await status
         print(finalized)
         #Now data is unzipped, next it executes
-        self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/dataset/train", "-v", "/golem/work/dataset/valid", "-c", "dog", "cat", "monkey", "cow") 
-  	# Awaiting this doesn't seem to work suprisingly
     async def run(self):
+        self._ctx.run("/bin/sh", "-c", "nohup python /golem/run/ImageClassification.py run &")
+        self._ctx.run(self.CLASSIFIERCLIENT,"-t", "/golem/work/dataset/train", "-v", "/golem/work/dataset/valid", "--start","-c", "dog", "cat", "monkey", "cow")
+        built = yield self._ctx.commit()
+        done = await built
+        print(done)
         while True:
             task = input("What task do you wish to run? [predict/train] : ")
             if task == "predict":
