@@ -5,7 +5,7 @@ from rpyc.core.service import *
 import argparse
 if __name__ == "__main__":
     # Initialize a Connection to the Model
-    conn = rpyc.utils.factory.unix_connect('./uds_socket')
+    conn = rpyc.utils.factory.unix_connect('/golem/run/uds_socket')
     conn._config['sync_request_timeout'] = None
     c = conn.root
     parser = argparse.ArgumentParser()
