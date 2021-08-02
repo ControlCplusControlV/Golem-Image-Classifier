@@ -8,7 +8,7 @@ import pathlib
 import random
 import string
 import sys
-
+import time
 import argparse
 from yapapi import (
     NoPaymentAccountError,
@@ -53,13 +53,16 @@ class ImageClassifierService(Service):
         zipped = yield self._ctx.commit()
         finalized = await zipped
         # Next up set up some folders in the volume so the classifier can identify it
-        self._ctx.run("/bin/ls", "/golem/work/dataset")
-        status = yield self._ctx.commit()
-        finalized = await status
-        print(finalized)
         #Now data is unzipped, next it executes
     async def run(self):
         self._ctx.run("/bin/sh", "-c", "nohup python /golem/run/ImageClassification.py run &")
+        servicestart = yield self._ctx.commit()
+        done1 = await servicestart
+        time.sleep(10)
+        self._ctx.run("/bin/ls", "/golem/run/")
+        ls = yield self._ctx.commit()
+        lsf = await ls
+        print(lsf)
         self._ctx.run(self.CLASSIFIERCLIENT,"-t", "/golem/work/dataset/train", "-v", "/golem/work/dataset/valid", "--start","-c", "dog", "cat", "monkey", "cow")
         built = yield self._ctx.commit()
         done = await built
