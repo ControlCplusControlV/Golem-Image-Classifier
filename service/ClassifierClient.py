@@ -9,8 +9,8 @@ if __name__ == "__main__":
     conn._config['sync_request_timeout'] = None
     c = conn.root
     parser = argparse.ArgumentParser()
-    #Required Args to train a model
-    parser.add_argument("-p", "--predict", type=str) 
+    # Required Args to train a model
+    parser.add_argument("-p", "--predict", type=str)
     parser.add_argument("-c", "--classes", nargs='+')
     parser.add_argument("-t", "--train", type=str)
     parser.add_argument("-v", "--validloc", type=str)
@@ -18,15 +18,15 @@ if __name__ == "__main__":
     args = parser.parse_args()
     # do stuff over rpyc
     if args.start:
-        if c.buildModel(args.train, args.validloc,args.classes):
+        if c.buildModel(args.train, args.validloc, args.classes):
             print("Model Initialized Successfully")
         else:
             print("Error Initializing Model")
     else:
-        if args.predict != None:
+        if args.predict is not None:
             prediction = c.predict(args.classes, args.predict)
             print(args.classes[prediction[0]])
-        if args.train != None:
+        if args.train is not None:
             status = c.train(args.classes, args.train, args.validloc)
             if status:
                 print("Model Successfully Trained")
