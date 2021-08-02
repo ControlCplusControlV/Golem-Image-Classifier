@@ -66,7 +66,7 @@ class ClassifierService(rpyc.Service):
 if __name__ == "__main__":
     # Now time to start the server
     
-    server = ThreadedServer(ClassifierService, socket_path='./uds_socket')
+    server = ThreadedServer(ClassifierService, socket_path='/golem/run/uds_socket')
     # Attach model to server
     t = Thread(target = server.start)
     t.daemon = True
