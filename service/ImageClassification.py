@@ -86,9 +86,6 @@ class ClassifierService(rpyc.Service):
         server.fmodel = model
         return True
 
-#model = buildModel(train_path, valid_path, ['dog','cat','monkey','cow'])
-
-
 if __name__ == "__main__":
     # Now time to start the server
 
