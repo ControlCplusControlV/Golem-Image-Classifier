@@ -8,7 +8,7 @@ import pathlib
 import random
 import string
 import sys
-import time
+import socket
 import argparse
 from yapapi import (
     NoPaymentAccountError,
@@ -27,12 +27,12 @@ STARTING_TIMEOUT = timedelta(minutes=100)
 
 
 class ImageClassifierService(Service):
-    CLASSIFIER = "/golem/run/ImageClassification.py"
-    CLASSIFIERCLIENT = "/golem/run/ClassifierClient.py"
+    CLASSIFIER = "/golem/run/imageclassifier.py"
+
     @staticmethod
     async def get_payload():
         return await vm.repo(
-            image_hash="5a5f3664b6f45263dc7c15a1107ad5c0ab0df3b4745c8194a8cbc8dd",
+            image_hash="262c82b1769f062b181095b15d0591f313a1ce9748c8fb53fc7df500",
             min_mem_gib=8,
             min_storage_gib=20,
         )
@@ -40,70 +40,102 @@ class ImageClassifierService(Service):
     async def start(self):
         """
         Setup the volume so that it will play nice with the classifier and all the needed data
-        is stored there. Send over the model, and make the needed dirs 
+        is stored there. Send over the model, and make the needed dirs
         """
-        self._ctx.send_file(str("vgg16.h5"), str("/golem/work/vgg16.h5"))
-        sent = yield self._ctx.commit()
-        finished = await sent
-        datapath = input("What is the name of the dataset to send over? : ")
-        #Send in the dataset as a zipped file
-        self._ctx.send_file(str(datapath), str("/golem/work/" + datapath))
-        data = "/golem/work/" + datapath
-        self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/", "-xzvf", data)
+
+        status = self._ctx.send_file(
+            "model.tar.gz", "/golem/work/model.tar.gz")
+        status = yield self._ctx.commit()
+        transfer = await status
+        print("Model Transferred")
+        self._ctx.run(
+            "/bin/tar",
+            "--no-same-owner",
+            "-C",
+            "/golem/work/",
+            "-xzvf",
+            "/golem/work/model.tar.gz")
         zipped = yield self._ctx.commit()
         finalized = await zipped
-        # Next up set up some folders in the volume so the classifier can identify it
-        #Now data is unzipped, next it executes
+        # Next up set up some folders in the volume so the classifier can
+        # identify it
+        self._ctx.run("/bin/mkdir", "/golem/work/dataset")
+        dataset = yield self._ctx.commit()
+        datasetf = await dataset
+        self._ctx.run("/bin/mkdir", "/golem/work/dataset/test")
+        test = yield self._ctx.commit()
+        testf = await test
+        self._ctx.run("/bin/mkdir", "/golem/work/dataset/test/Unknown")
+        utest = yield self._ctx.commit()
+        utestf = await utest
+        self._ctx.run("/bin/ls", "/golem/work/dataset/test")
+        files = yield self._ctx.commit()
+        rfiles = await files
+        print(rfiles)
+
     async def run(self):
-        self._ctx.run("/bin/sh", "-c", "nohup python /golem/run/ImageClassification.py run &")
-        servicestart = yield self._ctx.commit()
-        done1 = await servicestart
-        time.sleep(10)
-        self._ctx.run("/bin/ls", "/golem/run/")
-        ls = yield self._ctx.commit()
-        lsf = await ls
-        print(lsf)
-        self._ctx.run(self.CLASSIFIERCLIENT,"-t", "/golem/work/dataset/train", "-v", "/golem/work/dataset/valid", "--start","-c", "dog", "cat", "monkey", "cow")
-        built = yield self._ctx.commit()
-        done = await built
-        print(done)
         while True:
             task = input("What task do you wish to run? [predict/train] : ")
             if task == "predict":
-                    imagepath = input("What is the name of the image you wish to identify : ")
-                    await asyncio.sleep(10)
-                    self._ctx.send_file(str(imagepath), str("/golem/work/dataset/test/Unknown/" + imagepath))
-                    send = yield self._ctx.commit()
-                    sendf = await send
-                    print("Test Image Sent!")
-                    self._ctx.run(self.CLASSIFIERCLIENT, "-p", "/golem/work/dataset/test","-c","dog","cat","monkey","cow")
-                    future_results = yield self._ctx.commit()
-                    results = await future_results
-                    prediction = results[0].stdout.strip()
-                    print(prediction)
-                    #print(classes[int(list(prediction.split(".")[1])[2])])
+                imagepath = input(
+                    "What is the name of the image you wish to identify : ")
+                await asyncio.sleep(10)
+                self._ctx.send_file(
+                    str(imagepath), str(
+                        "/golem/work/dataset/test/Unknown/" + imagepath))
+                send = yield self._ctx.commit()
+                sendf = await send
+                print("Test Image Sent!")
+                self._ctx.run(
+                    self.CLASSIFIER,
+                    "--predict",
+                    "/golem/work/dataset/test",
+                    "--batch",
+                    "1")
+                future_results = yield self._ctx.commit()
+                results = await future_results
+                classes = ["bluebell", "buttercup", "coltsfoot", "cowslip"]
+                prediction = results[0].stdout.strip()
+                print(classes[int(list(prediction.split(".")[1])[2])])
             elif task == "train":
-                    datapath = input("What is the name of the training data folder : ")
-                    #Send in the dataset as a zipped file
-                    self._ctx.send_file(str(datapath), str("/golem/work/dataset/train/" + datapath))
-                    data = "/golem/work/dataset/train/" + datapath
-                    self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/dataset/train/", "-xzvf", data)
-                    zipped = yield self._ctx.commit()
-                    finalized = await zipped
-                    #Now data is unzipped, next it executes
-                    self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/dataset/train", "-v", "/golem/work/dataset/valid", "-c","dog","cat","monkey","cow") 
-                    future_results = yield self._ctx.commit()
-                    results = await future_results
-                    #next its awaited, once this completes the model is trained
-                    #but, some cleanup must be done
-                    self._ctx.run("/bin/rm", "-rf", "/golem/work/dataset/train")
-                    deletion = yield self._ctx.commit()
-                    ds = await deletion
-                    print("Model Successfully Trained")
+                datapath = input(
+                    "What is the name of the training data folder : ")
+                # Send in the dataset as a zipped file
+                self._ctx.send_file(
+                    str(datapath), str(
+                        "/golem/work/dataset/train/" + datapath))
+                data = "/golem/work/dataset/train/" + datapath
+                self._ctx.run(
+                    "/bin/tar",
+                    "--no-same-owner",
+                    "-C",
+                    "/golem/work/dataset/train/",
+                    "-xzvf",
+                    data)
+                zipped = yield self._ctx.commit()
+                finalized = await zipped
+                # Now data is unzipped, next it executes
+                self._ctx.run(
+                    self.CLASSIFIER,
+                    "--trainloc",
+                    "/golem/work/dataset/train")
+                future_results = yield self._ctx.commit()
+                results = await future_results
+                # next its awaited, once this completes the model is trained
+                # but, some cleanup must be done
+                self._ctx.run("/bin/rm", "-rf", "/golem/work/dataset/train")
+                deletion = yield self._ctx.commit()
+                ds = await deletion
+                # Model Cleared, so going to re-create the folder for future training
+                #self._ctx.run("/bin/mkdir", "/golem/work/dataset/test")
+                # test = yield self._ctx.commit()
+                # testf = await test
+                print("Model Successfully Trained")
+
 
 async def main(subnet_tag, driver=None, network=None):
     async with Golem(
-        budget=4.00,
+        budget=5.00,
         subnet_tag=subnet_tag,
         driver=driver,
         network=network,
@@ -133,7 +165,8 @@ async def main(subnet_tag, driver=None, network=None):
         # helper functions to display / filter instances
 
         def instances():
-            return [(s.provider_name, s.state.value) for s in cluster.instances]
+            return [(s.provider_name, s.state.value)
+                    for s in cluster.instances]
 
         def still_running():
             return any([s for s in cluster.instances if s.is_available])
@@ -150,7 +183,8 @@ async def main(subnet_tag, driver=None, network=None):
             await asyncio.sleep(5)
 
         if still_starting():
-            raise Exception(f"Failed to start instances before {STARTING_TIMEOUT} elapsed :( ...")
+            raise Exception(
+                f"Failed to start instances before {STARTING_TIMEOUT} elapsed :( ...")
 
         print("All instances started :)")
 
@@ -159,7 +193,7 @@ async def main(subnet_tag, driver=None, network=None):
 
         start_time = datetime.now()
 
-        while datetime.now() < start_time + timedelta(minutes=120): # 2 hour timeout 
+        while datetime.now() < start_time + timedelta(minutes=120):  # 2 hour timeout
             print(f"instances: {instances()}")
             await asyncio.sleep(5)
 
@@ -209,8 +243,7 @@ if __name__ == "__main__":
             f"No payment account initialized for driver `{e.required_driver}` "
             f"and network `{e.required_network}`.\n\n"
             f"See {handbook_url} on how to initialize payment accounts for a requestor node."
-            f""
-        )
+            f"")
     except KeyboardInterrupt:
         print(
             f""
