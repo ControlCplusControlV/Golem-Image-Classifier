@@ -70,7 +70,7 @@ class ImageClassifierService(Service):
         """
         Starts a quick http server, accepts predict and train requests in packets
         """
-        async def predict(imagename):
+        async def predict(imagename : str):
             imagename = input("What is the name of the image you wish to identify : ")
             await asyncio.sleep(10)
             self._ctx.send_file(str(imagename), str("/golem/work/"+ GlobalStore.dataset + "/test/Unknown/" + imagename))
@@ -86,8 +86,8 @@ class ImageClassifierService(Service):
             self._ctx.run("/bin/rm", "-rf", "/golem/work/"+ GlobalStore.dataset +"/test")
             deletion = yield self._ctx.commit()
             ds = await deletion
-            print(prediction)
-        async def train(validpath, trainpath):
+            return prediction
+        async def train(validpath : str, trainpath : str) -> str:
             datapath = input("What is the name of the training data folder : ")
             validpath = ""
             #Send in the dataset as a zipped file
@@ -106,7 +106,7 @@ class ImageClassifierService(Service):
             self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/" + GlobalStore.dataset + "/train", "-v", "/golem/work/" + GlobalStore.dataset + "/valid", "-c", GlobalStore.classes) 
             future_results = yield self._ctx.commit()
             results = await future_results
-            print("Model Successfully Trained")
+            return "Model Successfully Trained"
         app = Flask(__name__)
         api = Api(app)
         class PredictTestService:
