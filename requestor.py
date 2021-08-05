@@ -98,7 +98,7 @@ class ImageClassifierService(Service):
                 #Send in the dataset as a zipped file
                 #self._ctx.send_file(str(datapath), str("/golem/work/"+ GlobalStore.dataset + "/train/" + datapath))
                 #self._ctx.send_file(str(validpath), str("/golem/work/"+ GlobalStore.dataset + "/valid/" + validpath))
-                t#ransferred = yield self._ctx.commit()
+                #transferred = yield self._ctx.commit()
                 #finished = await transferred
                 train = "/golem/work/" + GlobalStore.dataset +"/train/" 
                 valid = "/golem/work/" + GlobalStore.dataset +"/valid/"
