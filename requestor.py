@@ -10,10 +10,6 @@ import string
 import sys
 import time
 import argparse
-from flask import Flask
-from flask_restful import Resource, Api, reqparse
-import pandas as pd
-import ast
 from yapapi import (
     NoPaymentAccountError,
     __version__ as yapapi_version,
@@ -32,6 +28,7 @@ STARTING_TIMEOUT = timedelta(minutes=100)
 class Store:
     classes = ""
     dataset = ""
+
 GlobalStore = Store()
 class ImageClassifierService(Service):
     CLASSIFIER = "/golem/run/ImageClassification.py"
@@ -40,94 +37,81 @@ class ImageClassifierService(Service):
     async def get_payload():
         return await vm.repo(
             image_hash="5a5f3664b6f45263dc7c15a1107ad5c0ab0df3b4745c8194a8cbc8dd",
-            # For ML these definitely should be tuned, but was on testnet and couldn't be picky
             min_mem_gib=8,
             min_storage_gib=20,
         )
 
     async def start(self):
+        print(GlobalStore.classes)
+        print(GlobalStore.dataset)
         """
         Transfers over model weights, and starts prediction service, in addition to model   
         REQUIRED PARAMS - dataset.tar.gz
         """
-        data = "/golem/work/" + GlobalStore.dataset 
+        data = "/golem/work/" + GlobalStore.dataset + ".tar.gz"
         self._ctx.send_file(str("vgg16.h5"), str("/golem/work/vgg16.h5"))
         sent = yield self._ctx.commit()
         finished = await sent
         #Send in the dataset as a zipped file
-        self._ctx.send_file(str(GlobalStore.dataset), str(data))
+        self._ctx.send_file(str(GlobalStore.dataset + ".tar.gz"), str(data))
         self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/", "-xzvf", data)
         # Start Main classification script so http server can forward it requests
         self._ctx.run("/bin/sh", "-c", "nohup python /golem/run/ImageClassification.py run &")
         servicestart = yield self._ctx.commit()
-        done1 = await servicestart # This is required or it will execute the next script before socket is created, so delay is neccesary
+        done1 = await servicestart # This is required or it will execute the next script before socket is created, so delay is neccesary'
+        await asyncio.sleep(10)
         trainpath = "/golem/work/" + GlobalStore.dataset + "/train"
         validset = "/golem/work/" + GlobalStore.dataset + "/valid"
-        self._ctx.run(self.CLASSIFIERCLIENT,"-t", trainpath, "-v", validset, "--start","-c", GlobalStore.classes)
+        self._ctx.run("/bin/ls", "/golem/work/dataset")
+        status = yield self._ctx.commit()
+        finalized = await status
+        print(finalized)
+        self._ctx.run(self.CLASSIFIERCLIENT,"-t", trainpath, "-v", validset, "--start", "-c", *GlobalStore.classes)
         built = yield self._ctx.commit()
         done = await built
     async def run(self):
         """
         Starts a quick http server, accepts predict and train requests in packets
         """
-        async def predict(imagename : str):
-            imagename = input("What is the name of the image you wish to identify : ")
-            await asyncio.sleep(10)
-            self._ctx.send_file(str(imagename), str("/golem/work/"+ GlobalStore.dataset + "/test/Unknown/" + imagename))
-            send = yield self._ctx.commit()
-            sendf = await send
-            print("Test Image Sent!")
-            # TODO assume test location and classes
-            self._ctx.run(self.CLASSIFIERCLIENT, "-p", "/golem/work/" + GlobalStore.dataset + "/test","-c", GlobalStore.classes)
-            future_results = yield self._ctx.commit()
-            results = await future_results
-            prediction = results[0].stdout.strip()
-            #Cleanup test folder for next prediction
-            self._ctx.run("/bin/rm", "-rf", "/golem/work/"+ GlobalStore.dataset +"/test")
-            deletion = yield self._ctx.commit()
-            ds = await deletion
-            return prediction
-        async def train(validpath : str, trainpath : str) -> str:
-            datapath = input("What is the name of the training data folder : ")
-            validpath = ""
-            #Send in the dataset as a zipped file
-            self._ctx.send_file(str(datapath), str("/golem/work/"+ GlobalStore.dataset + "/train/" + datapath))
-            self._ctx.send_file(str(datapath), str("/golem/work/"+ GlobalStore.dataset + "/valid/" + validpath))
-            transferred = yield self._ctx.commit()
-            finished = await transferred
-            train = "/golem/work/" + GlobalStore.dataset +"/train/" + datapath
-            valid = "/golem/work/" + GlobalStore.dataset +"/train/" + validpath
-            validpath = "/golem/work/" + GlobalStore.dataset +"/valid/" + datapath
-            self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/" + GlobalStore.dataset + "/train/", "-xzvf", train)
-            self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/" + GlobalStore.dataset + "/valid/", "-xzvf", valid)
-            zipped = yield self._ctx.commit()
-            finalized = await zipped
-            #Now data is unzipped, next it executes
-            self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/" + GlobalStore.dataset + "/train", "-v", "/golem/work/" + GlobalStore.dataset + "/valid", "-c", GlobalStore.classes) 
-            future_results = yield self._ctx.commit()
-            results = await future_results
-            return "Model Successfully Trained"
-        app = Flask(__name__)
-        api = Api(app)
-        class PredictTestService:
-            def post(self):
-                parser = reqparse.RequestParser()
-                parser.add_argument('task', required=True)  # "predict" or "train"
-                parser.add_argument('validpath', required=False) # For Train
-                parser.add_argument('trainpath', required=False) # For Train
-                parser.add_argument('imagename', required=False) # For Predict
-                args = parser.parse_args()
-                if args.task == 'predict':
-                    result = predict(args.imagename)
-                elif args.task == 'train':
-                    result = train(args.validpath, args.trainpath)
-                # TODO call methods with this data
-                return {"response" : result}, 200
         while True:
-            task = ""
-            app.run()
-        
-
+            task = ["train", "valid", "1"]
+            if task[0] == "predict":
+                imagename = task[1]
+                await asyncio.sleep(10)
+                self._ctx.send_file(str(imagename), str("/golem/work/"+ GlobalStore.dataset + "/test/Unknown/" + imagename))
+                send = yield self._ctx.commit()
+                sendf = await send
+                print("Test Image Sent!")
+                self._ctx.run(self.CLASSIFIERCLIENT, "-p", "/golem/work/" + GlobalStore.dataset + "/test","-c", *GlobalStore.classes)
+                future_results = yield self._ctx.commit()
+                results = await future_results
+                prediction = results[0].stdout.strip()
+                #Cleanup test folder for next prediction
+                self._ctx.run("/bin/rm", "-rf", "/golem/work/"+ GlobalStore.dataset +"/test")
+                deletion = yield self._ctx.commit()
+                ds = await deletion
+                print(prediction)
+            if task[0] == "train":
+                await asyncio.sleep(10)
+                datapath = task[1]
+                validpath = task[2]
+                #Send in the dataset as a zipped file
+                #self._ctx.send_file(str(datapath), str("/golem/work/"+ GlobalStore.dataset + "/train/" + datapath))
+                #self._ctx.send_file(str(validpath), str("/golem/work/"+ GlobalStore.dataset + "/valid/" + validpath))
+                t#ransferred = yield self._ctx.commit()
+                #finished = await transferred
+                train = "/golem/work/" + GlobalStore.dataset +"/train/" 
+                valid = "/golem/work/" + GlobalStore.dataset +"/valid/"
+                validpath = "/golem/work/" + GlobalStore.dataset +"/valid/" + datapath
+                #self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/" + GlobalStore.dataset + "/train/", "-xzvf", train)
+                #self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/" + GlobalStore.dataset + "/valid/", "-xzvf", valid)
+                #zipped = yield self._ctx.commit()
+                #finalized = await zipped
+                #Now data is unzipped, next it executes
+                self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/" + GlobalStore.dataset + "/train", "-v", "/golem/work/" + GlobalStore.dataset + "/valid", "-c", GlobalStore.classes) 
+                future_results = yield self._ctx.commit()
+                results = await future_results
+                print("Model Successfully Trained")
 async def main(subnet_tag, driver=None, network=None):
     async with Golem(
         budget=4.00,
@@ -204,21 +188,23 @@ async def main(subnet_tag, driver=None, network=None):
 
 
 if __name__ == "__main__":
+
+    now = datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
+    log_file=f"simple-service-yapapi-{now}.log"
+
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str)
     parser.add_argument("-c", "--classes", nargs='+')
     args = parser.parse_args()
-
-    GlobalStore.dataset = args.dataset
-    classes = ""
-    for index in args.classes:
-        classes = args.classes[index] + " "
-    GlobalStore.classes = classes
     # This is only required when running on Windows with Python prior to 3.8:
     windows_event_loop_fix()
+    GlobalStore.dataset = args.dataset
+    GlobalStore.classes = args.classes
     now = datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
+    log_file=f"simple-service-yapapi-{now}.log"
+
     enable_default_logger(
-        log_file=f"simple-service-yapapi-{now}.log",
+        log_file=log_file,
         debug_activity_api=True,
         debug_market_api=True,
         debug_payment_api=True,
