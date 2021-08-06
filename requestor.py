@@ -74,7 +74,9 @@ class ImageClassifierService(Service):
         Starts a quick http server, accepts predict and train requests in packets
         """
         while True:
-            task = ["train", "valid", "1"]
+            #task = ["train", "train.tar.gz", "valid.tar.gz"]
+            inputtsk = input("Enter your task please in the form of a list")
+            task = f"{inputtsk}"
             if task[0] == "predict":
                 imagename = task[1]
                 await asyncio.sleep(10)
@@ -92,23 +94,22 @@ class ImageClassifierService(Service):
                 ds = await deletion
                 print(prediction)
             if task[0] == "train":
-                await asyncio.sleep(10)
-                datapath = task[1]
+                trainpath = task[1]
                 validpath = task[2]
                 #Send in the dataset as a zipped file
-                #self._ctx.send_file(str(datapath), str("/golem/work/"+ GlobalStore.dataset + "/train/" + datapath))
-                #self._ctx.send_file(str(validpath), str("/golem/work/"+ GlobalStore.dataset + "/valid/" + validpath))
-                #transferred = yield self._ctx.commit()
-                #finished = await transferred
-                train = "/golem/work/" + GlobalStore.dataset +"/train/" 
-                valid = "/golem/work/" + GlobalStore.dataset +"/valid/"
-                validpath = "/golem/work/" + GlobalStore.dataset +"/valid/" + datapath
-                #self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/" + GlobalStore.dataset + "/train/", "-xzvf", train)
-                #self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/" + GlobalStore.dataset + "/valid/", "-xzvf", valid)
-                #zipped = yield self._ctx.commit()
-                #finalized = await zipped
+                self._ctx.send_file(str(trainpath), str("/golem/work/"+ GlobalStore.dataset + "/train/" + trainpath))
+                self._ctx.send_file(str(validpath), str("/golem/work/"+ GlobalStore.dataset + "/valid/" + validpath))
+                transferred = yield self._ctx.commit()
+                finished = await transferred
+                train = "/golem/work/" + GlobalStore.dataset +"/train/" + trainpath
+                valid = "/golem/work/" + GlobalStore.dataset +"/valid/" + validpath
+                self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/" + GlobalStore.dataset + "/train/", "-xzvf", train)
+                self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/" + GlobalStore.dataset + "/valid/", "-xzvf", valid)
+                zipped = yield self._ctx.commit()
+                finalized = await zipped
                 #Now data is unzipped, next it executes
-                self._ctx.run(self.CLASSIFIER, "-t", "/golem/work/" + GlobalStore.dataset + "/train", "-v", "/golem/work/" + GlobalStore.dataset + "/valid", "-c", GlobalStore.classes) 
+                await asyncio.sleep(1)
+                self._ctx.run(self.CLASSIFIERCLIENT, "-t", "/golem/work/" + GlobalStore.dataset + "/train", "-v", "/golem/work/" + GlobalStore.dataset + "/valid", "-c", *GlobalStore.classes) 
                 future_results = yield self._ctx.commit()
                 results = await future_results
                 print("Model Successfully Trained")
