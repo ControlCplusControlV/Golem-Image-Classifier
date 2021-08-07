@@ -18,10 +18,6 @@ import argparse
 import rpyc
 from rpyc.utils.server import ThreadedServer
 from threading import Thread
-train_path = 'cats-dogs-monkeys-cows/train'
-valid_path = 'cats-dogs-monkeys-cows/valid'
-test_path = 'cats-dogs-monkeys-cows/test'
-
 
 class ClassifierService(rpyc.Service):
     def exposed_buildModel(self, train_path, valid_path, classes):
@@ -32,7 +28,6 @@ class ClassifierService(rpyc.Service):
 
         imgs, labels = next(train_batches)
 
-        train_batches.class_indices
 
         vgg16_model = keras.applications.vgg16.VGG16(
             weights="/golem/work/vgg16.h5")
