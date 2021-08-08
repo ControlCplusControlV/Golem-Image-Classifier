@@ -8,6 +8,8 @@ Clone this repo into the folder of your choice, the main componet needed for tes
 
 The service responds to 2 main types of requests, Predict and Train. The Requestor script itself sets up a local api so you can easily send lots of requests it then forwards to the service running on the provider. 
 
+Demo.py showcases how to interact with the requestor in an automated way, running the requestor as a subprocess allows it to interconnect with existing ML implementations without needing to build additional network handling to send and recieve requests, instead handling stdout and stdin directly.
+
 ## Initialzation
 
 The requestor script requires 2 things upon initialization, a dataset archive in .tar.gz format with a similar format to the one shown in /services/dataset ,and a list of class names.
