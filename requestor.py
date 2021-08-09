@@ -74,9 +74,10 @@ class ImageClassifierService(Service):
         Starts a quick http server, accepts predict and train requests in packets
         """
         while True:
-            #task = ["train", "train.tar.gz", "valid.tar.gz"]
-            inputtsk = input("Enter your task please in the form of a list")
-            task = f"{inputtsk}"
+            #task = train train.tar.gz valid.tar.gz
+            #task = predict test1.jpg
+            inputtsk = input("Enter your task please in the form of a list : ")
+            task = inputtsk.split()
             if task[0] == "predict":
                 imagename = task[1]
                 await asyncio.sleep(10)
