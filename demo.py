@@ -1,24 +1,12 @@
-import os
-import requests
 from subprocess import Popen, PIPE, STDOUT
-# Image path
-# Validation path
-# Train path
-
-tasks = [
-    ["predict"],
-    ["train", ""]
-    ]
+import subprocess
+import time
 
 if __name__ == '__main__':
-    p = Popen(["python3", "requestor.py", "-d", "dataset", "-c", "dog", "monkey", "cat", "cow"]) # Start Requestor Server
-    stdout_data = p.communicate(input='["predict", "test1.jpg"]')[0]
-    stdout_data1 = p.communicate(input='["train", "test1.jpg"]')[0]
-
-    # Wait for service to startup
-    """
-    parser.add_argument('task', required=True)  # "predict" or "train"
-    parser.add_argument('validpath', required=False) # For Train
-    parser.add_argument('trainpath', required=False) # For Train
-    parser.add_argument('imagename', required=False)
-    """
+    p = Popen(["python3", "requestor.py", "-d", "dataset", "-c", "dog", "monkey", "cat", "cow"], stdin=subprocess.PIPE) # Start Requestor Server
+    tasks = ['predict test1.jpg','train train.tar.gz valid.tar.gz']
+    task1 = p.stdin.write((tasks[0] + "\n").encode("utf-8"))
+    task2 = p.stdin.write((tasks[1] + "\n").encode("utf-8"))
+    # Having \n on the final task, or most recent one without anothet ask coming up causes an EOF error, rather than the provider just
+    # continuing on normally
+    task3 = p.stdin.write((tasks[0]).encode("utf-8"))
