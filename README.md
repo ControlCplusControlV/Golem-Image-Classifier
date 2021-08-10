@@ -25,12 +25,15 @@ Files used in demo.py
 
 The requestor script requires 2 things upon initialization, a dataset archive in .tar.gz format with a similar format to the one shown in /services/dataset ,and a list of class names.
 
+Example - requestor.py -d dataset -c dog monkey cat cow
+
 ## Predict
 
 __Required Args__
 
 - a .jpg file in the same directory as the requestor script
 
+Example - "predict test1.jpg"
 
 ## Train
 
@@ -39,6 +42,8 @@ __Required Args__
 - A .tar.gz archive containing training images, important to note these images must be directly inside the archive, not a subdirectory within it
 
 - A .tar.gz archive containing validation images, important to note these images must be directly inside the archive, not a subdirectory within it
+
+Example - "train train.tar.gz valid.tar.gz"
 
 Returns a message when the model training is completed
 
