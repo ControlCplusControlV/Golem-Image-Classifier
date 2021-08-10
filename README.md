@@ -21,7 +21,7 @@ Files used in demo.py
 [Test Image](https://mega.nz/file/Zih2QBiR#uAm-dKGQutINAq4StWBP2Wqy9hV4QPKJm2Tmpm792sU)
 
 
-## Initialzation
+## Initialization
 
 The requestor script requires 2 things upon initialization, a dataset archive in .tar.gz format with a similar format to the one shown in /services/dataset ,and a list of class names.
 
