@@ -13,9 +13,13 @@ The service responds to 2 main types of requests, Predict and Train. The Request
 Files used in demo.py
 
 [Dataset](https://mega.nz/file/dngA1J6J#uxrI6DOFMzdcr4vmU_9Y3gYLn1axbZ6X_a6imusPgDY)
+
 [Train data](https://mega.nz/file/tnoUjBRS#lC_gRgmHQuokJQSJ3sSx-KsixOby3nbSiuFOkG5p2xk)
+
 [Validation Data](https://mega.nz/file/tj4UHDBb#uqYCN9f9K19oY2kLQEr3YBQkIh_G3-FHug4v_LBL0sw)
+
 [Test Image](https://mega.nz/file/Zih2QBiR#uAm-dKGQutINAq4StWBP2Wqy9hV4QPKJm2Tmpm792sU)
+
 
 ## Initialzation
 
