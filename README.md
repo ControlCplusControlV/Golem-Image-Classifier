@@ -6,7 +6,7 @@ This service was designed for the bounty put out by Golem as seen [here](https:/
 
 Clone this repo into the folder of your choice, the main componet needed for testing is the requestor.py script, but the entire service code is included in the service folder if you need to check something. Next download [Model Weights](https://storage.googleapis.com/tensorflow/keras-applications/vgg16/vgg16_weights_tf_dim_ordering_tf_kernels.h5) and name it as "vgg16.h5", this is a required step as the service requires these weights for initialization. Make sure these weights are in the same folder as the requestor script.
 
-The service responds to 2 main types of requests, Predict and Train. The Requestor script itself sets up a local api so you can easily send lots of requests it then forwards to the service running on the provider. 
+The service responds to 2 main types of requests, Predict and Train. The Requestor script itself is used a subprocess that must be initialized with parameters before being incorporated into a larger process. See demo.py for examples
 
 ## Demo Dataset
 
