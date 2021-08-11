@@ -1,7 +1,6 @@
 #!/usr/local/bin/python
 import rpyc
-from rpyc.utils import *
-from rpyc.core.service import *
+from rpyc.utils.factory import unix_connect
 import argparse
 if __name__ == "__main__":
     # Initialize a Connection to the Model
@@ -24,7 +23,7 @@ if __name__ == "__main__":
             print("Error Initializing Model")
     else:
         if args.predict is not None:
-            prediction = c.predict(args.classes, args.predict)
+            prediction = c.predict(args.predict)
             print(args.classes[prediction[0]])
         if args.train is not None:
             status = c.train(args.classes, args.train, args.validloc)
