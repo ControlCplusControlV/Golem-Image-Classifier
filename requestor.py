@@ -42,8 +42,6 @@ class ImageClassifierService(Service):
         )
 
     async def start(self):
-        print(GlobalStore.classes)
-        print(GlobalStore.dataset)
         """
         Transfers over model weights, and starts prediction service, in addition to model   
         REQUIRED PARAMS - dataset.tar.gz
@@ -62,10 +60,6 @@ class ImageClassifierService(Service):
         await asyncio.sleep(10)
         trainpath = "/golem/work/" + GlobalStore.dataset + "/train"
         validset = "/golem/work/" + GlobalStore.dataset + "/valid"
-        self._ctx.run("/bin/ls", "/golem/work/dataset")
-        status = yield self._ctx.commit()
-        finalized = await status
-        print(finalized)
         self._ctx.run(self.CLASSIFIERCLIENT,"-t", trainpath, "-v", validset, "--start", "-c", *GlobalStore.classes)
         built = yield self._ctx.commit()
         done = await built
