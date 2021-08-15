@@ -9,9 +9,9 @@ from keras.optimizers import Adam
 from keras.metrics import categorical_crossentropy
 from keras.preprocessing.image import ImageDataGenerator
 from keras.layers.normalization import BatchNormalization
-from keras.layers.convolutional import *
+import keras.layers.convolutional 
 from sklearn.metrics import confusion_matrix
-from rpyc.core.service import *
+import rpyc.core.service 
 import itertools
 import os
 import argparse
@@ -25,9 +25,6 @@ class ClassifierService(rpyc.Service):
             train_path, target_size=(224, 224), classes=classes, batch_size=10)
         valid_batches = ImageDataGenerator().flow_from_directory(
             valid_path, target_size=(224, 224), classes=classes, batch_size=4)
-
-        imgs, labels = next(train_batches)
-
 
         vgg16_model = keras.applications.vgg16.VGG16(
             weights="/golem/work/vgg16.h5")
@@ -54,7 +51,7 @@ class ClassifierService(rpyc.Service):
         server.fmodel = model
         return True
 
-    def exposed_predict(self, classes, testloc):
+    def exposed_predict(self, testloc):
         model = server.fmodel
         test_batches = ImageDataGenerator().flow_from_directory(testloc, target_size=(
             224, 224), classes=["Unknown"], batch_size=1, save_format='jpg')

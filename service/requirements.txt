@@ -1,0 +1,7 @@
+numpy>=1.19.5
+keras==2.4.3
+tensorflow==2.5.0
+argparse>=1.4.0
+rpyc==5.0.1
+sklearn
+Pillow==8.2.0
