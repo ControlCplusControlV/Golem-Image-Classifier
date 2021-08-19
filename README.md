@@ -1,14 +1,14 @@
 # Golem Image Classifier Service
 
-This service was designed for the bounty put out by Golem as seen [here](https://gitcoin.co/issue/golemfactory/yagna/1456/100026046). To run this service a pre-existing requestor node setup is required, but if you don't have one a quick primer can be found [here](https://handbook.golem.network/requestor-tutorials/flash-tutorial-of-requestor-development). 
+This service was designed for the bounty put out by Golem as seen [here](https://gitcoin.co/issue/golemfactory/yagna/1456/100026046). To run this service a pre-existing requestor node setup is required, but if you don't have one a quick primer can be found [here](https://handbook.golem.network/requestor-tutorials/flash-tutorial-of-requestor-development). This service defines an requestor.py subsystem which can be given predict tasks. A dataset is required to make predictions, right now the neural nets itself is vgg16, but I am looking into EfficientNetV2.
 
 ## Using the Service
 
 Clone this repo into the folder of your choice, the main componet needed for testing is the requestor.py script, but the entire service code is included in the service folder if you need to check something. Next download [Model Weights](https://storage.googleapis.com/tensorflow/keras-applications/vgg16/vgg16_weights_tf_dim_ordering_tf_kernels.h5) and name it as "vgg16.h5", this is a required step as the service requires these weights for initialization. Make sure these weights are in the same folder as the requestor script.
 
-The service responds to 2 main types of requests, Predict and Train. The Requestor script itself is used a subprocess that must be initialized with parameters before being incorporated into a larger process. See demo.py for examples
+The service responds to 2 main types of requests, Predict and Train. The Requestor script itself is used a subprocess that must be initialized with parameters before being incorporated into a larger process. See demo.py for examples, a couple of files are needed, and all are zipped as .tar.gz in order to reduce time spent sending data, so more can be used for training.
 
-## Demo Dataset
+# Demo 
 
 Files used in demo.py
 
@@ -21,16 +21,23 @@ Files used in demo.py
 [Test Image](https://mega.nz/file/Zih2QBiR#uAm-dKGQutINAq4StWBP2Wqy9hV4QPKJm2Tmpm792sU)
 
 
-## Initialization
+Demo.py showcases how to interact with the requestor in an automated way, running the requestor as a subprocess allows it to interconnect with existing ML implementations without needing to build additional network handling to send and recieve requests, instead handling stdout and stdin directly. Running demo.py does a couple things
 
-Demo.py showcases how to interact with the requestor in an automated way, running the requestor as a subprocess allows it to interconnect with existing ML implementations without needing to build additional network handling to send and recieve requests, instead handling stdout and stdin directly.
+- First requestor.py is started with  -d dataset -c dog monkey cat cow as args, this tells it the classes to be used in the demo, and dataset is the name of our dataset so it searches for "dataset.tar.gz"
 
+- Sends the requestor a task once intialized to predict with test1.jpg, this should respond with monkey in the stdout marking hte prediction
+
+- Another task is then sent with more validation images and training images, once recieved the neural net then trains on those images and returns "Model Training Success" once complete.
+- Finally, the test image is sent again to verify that the neural net is working, and was trained properly
+
+## Requestor
 
 The requestor script requires 2 things upon initialization, a dataset archive in .tar.gz format with a similar format to the one shown in /services/dataset ,and a list of class names.
 
 Example - requestor.py -d dataset -c dog monkey cat cow
 
-## Predict
+It then prompts the user for input on which task they would like to execute.
+### Predict
 
 __Required Args__
 
@@ -38,7 +45,7 @@ __Required Args__
 
 Example - "predict test1.jpg"
 
-## Train
+### Train
 
 __Required Args__
 
