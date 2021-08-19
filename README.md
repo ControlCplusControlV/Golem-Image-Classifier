@@ -22,10 +22,8 @@ Files used in demo.py
 
 
 ## Initialization
-=======
-Demo.py showcases how to interact with the requestor in an automated way, running the requestor as a subprocess allows it to interconnect with existing ML implementations without needing to build additional network handling to send and recieve requests, instead handling stdout and stdin directly.
 
-## Initialzation
+Demo.py showcases how to interact with the requestor in an automated way, running the requestor as a subprocess allows it to interconnect with existing ML implementations without needing to build additional network handling to send and recieve requests, instead handling stdout and stdin directly.
 
 
 The requestor script requires 2 things upon initialization, a dataset archive in .tar.gz format with a similar format to the one shown in /services/dataset ,and a list of class names.
