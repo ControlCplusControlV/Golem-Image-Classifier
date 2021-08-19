@@ -30,18 +30,23 @@ Demo.py showcases how to interact with the requestor in an automated way, runnin
 - Another task is then sent with more validation images and training images, once recieved the neural net then trains on those images and returns "Model Training Success" once complete.
 - Finally, the test image is sent again to verify that the neural net is working, and was trained properly
 
+The demo is primarly there to showcase how to incorporate the requestor as a subprocess module, I chose this approach for ease into existing neural net implementations, as its similar to using another library, but with an added daemon process.
+
 ## Requestor
 
 The requestor script requires 2 things upon initialization, a dataset archive in .tar.gz format with a similar format to the one shown in /services/dataset ,and a list of class names.
 
 Example - requestor.py -d dataset -c dog monkey cat cow
 
-It then prompts the user for input on which task they would like to execute.
+It then prompts the user for input on which task they would like to execute. Tasks are single strings with arguments seperated by a space. The 2 types of tasks the requestor responds to are "predict" or "train".
+
 ### Predict
 
 __Required Args__
 
 - a .jpg file in the same directory as the requestor script
+
+Returns a labal inside of stdout.
 
 Example - "predict test1.jpg"
 
@@ -53,13 +58,13 @@ __Required Args__
 
 - A .tar.gz archive containing validation images, important to note these images must be directly inside the archive, not a subdirectory within it
 
-Example - "train train.tar.gz valid.tar.gz"
+Returns "Model Successfully Trained" in stdout
 
-Returns a message when the model training is completed
+Example - "train train.tar.gz valid.tar.gz"
 
 ## Modifying for Personal/Business Use
 
-If you plant to modify this for personal or business use, use a dataset with the same format as shown in /service/dataset and zip it up in .tar.gz, then use the demo.py script as a example to base your script to off/modify it. 
+If you plant to modify this for personal or business use, use a dataset with the same format as shown in /service/dataset and zip it up in .tar.gz, then use the demo.py script as a example to base your script to off/modify it. THe vgg16.h5 weights can be changed for other neural nets with minimal modification as neural net is initialized from the weights, but optimizations are for vgg16 so you will encounter irregularities/errors 
 
 ### Questions?
 
