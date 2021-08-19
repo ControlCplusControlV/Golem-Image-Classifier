@@ -15,3 +15,6 @@ if __name__ == '__main__':
     # Having \n on the final task, or most recent one without anothet ask coming up causes an EOF error, rather than the provider just
     # continuing on normally
     task3 = p.stdin.write((tasks[0]).encode("utf-8"))
+    
+    # Finished running tasks, kill course
+    p.kill()
