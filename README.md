@@ -27,16 +27,16 @@ Demo.py showcases how to interact with the requestor in an automated way, runnin
 
 - Sends the requestor a task once intialized to predict with test1.jpg, this should respond with monkey in the stdout marking the prediction
 
-![predict](predict.jpg?raw=true)
+![predict](predict.png?raw=true)
 
 - Another task is then sent with more validation images and training images, once recieved the neural net then trains on those images and returns "Model Training Success" once complete.
 
-![train](train.jpg?raw=true)
+![train](train.png?raw=true)
 
 - Finally, the test image is sent again to verify that the neural net is working, and was trained properly
 
 
-![final](final.jpg?raw=true)
+![final](final.png?raw=true)
 
 The demo is primarly there to showcase how to incorporate the requestor as a subprocess module, I chose this approach for ease into existing neural net implementations, as its similar to using another library, but with an added daemon process.
 
