@@ -58,6 +58,8 @@ Returns a labal inside of stdout.
 
 Example - "predict test1.jpg"
 
+A line end character may be needed if you are using stdin to queue up and not manually entering the tasks.
+
 ### Train
 
 __Required Args__
@@ -70,9 +72,13 @@ Returns "Model Successfully Trained" in stdout
 
 Example - "train train.tar.gz valid.tar.gz"
 
+A line end character may be needed if you are using stdin to queue up and not manually entering the tasks.
+
 ## Modifying for Personal/Business Use
 
-If you plant to modify this for personal or business use, use a dataset with the same format as shown in /service/dataset and zip it up in .tar.gz, then use the demo.py script as a example to base your script to off/modify it. THe vgg16.h5 weights can be changed for other neural nets with minimal modification as neural net is initialized from the weights, but optimizations are for vgg16 so you will encounter irregularities/errors 
+If you plant to modify this for personal or business use, use a dataset with the same format as shown in /service/dataset and zip it up in .tar.gz, then use the demo.py script as a example to base your script to off/modify it. Th e vgg16.h5 weights can be changed for other neural nets with minimal modification as neural net is initialized from the weights, but optimizations are for vgg16 so you will encounter irregularities/errors.
+
+Swapping out datasets and using the vgg16 will work fine though so long as it is in the proper format. It is reccomended to incorporate the requestor.py script as a subprocess into your ML implementation. Tasks can be queued up via stdin and seperated with a line end character at the end. See demo.py for more information.
 
 ### Questions?
 
