@@ -1,7 +1,7 @@
 #!/usr/local/bin/python
+import argparse
 import rpyc
 from rpyc.utils.factory import unix_connect
-import argparse
 if __name__ == "__main__":
     # Initialize a Connection to the Model
     conn = rpyc.utils.factory.unix_connect('/golem/run/uds_socket')
