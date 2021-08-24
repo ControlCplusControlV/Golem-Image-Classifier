@@ -12,7 +12,7 @@ if __name__ == '__main__':
     tasks = ['predict test1.jpg','train train.tar.gz valid.tar.gz']
     task1 = process.stdin.write((tasks[0] + "\n").encode("utf-8"))
     task2 = process.stdin.write((tasks[1] + "\n").encode("utf-8"))
-    # Having \n on the final task, or most recent one without anothet ask coming up causes an EOF error, rather than the provider just
+    # Having \n on the final task, or most recent one without another ask coming up causes an EOF error, rather than the provider just
     # continuing on normally
     task3 = process.stdin.write((tasks[0]).encode("utf-8"))
     # Wait for process, and then upon some condition met by STDOUT you can end it with proc.kill or terminate
