@@ -16,7 +16,8 @@ if __name__ == '__main__':
     # continuing on normally
     task3 = process.stdin.write((tasks[0]).encode("utf-8"))
     # Wait for process, and then upon some condition met by STDOUT you can end it with proc.kill or terminate
-    try:
-        pass
-    except KeyboardInterrupt:
-        proc.terminate()
+    while True:
+        try:
+            pass
+        except KeyboardInterrupt:
+            proc.terminate()
