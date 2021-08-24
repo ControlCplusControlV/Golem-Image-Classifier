@@ -15,8 +15,8 @@ if __name__ == '__main__':
     # Having \n on the final task, or most recent one without anothet ask coming up causes an EOF error, rather than the provider just
     # continuing on normally
     task3 = process.stdin.write((tasks[0]).encode("utf-8"))
-    # Then run you're handling of output here, tasks are queued up in stdin, in this case just wait 15 minutes
-    # So we can see the output
-    time.sleep(900)
-    # Then kill subprocess when done
-    process.kill()
+    # Wait for process, and then upon some condition met by STDOUT you can end it with proc.kill or terminate
+    try:
+        proc.wait()
+    except KeyboardInterrupt:
+        proc.terminate()
