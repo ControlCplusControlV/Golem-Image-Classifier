@@ -4,6 +4,11 @@ the requestor agent controlling and interacting with Image Classifier
 """
 import asyncio
 from datetime import datetime, timedelta, timezone
+import pathlib
+import random
+import string
+import sys
+import time
 import argparse
 from yapapi import (
     NoPaymentAccountError,
@@ -20,23 +25,14 @@ from yapapi.payload import vm
 NUM_INSTANCES = 1
 STARTING_TIMEOUT = timedelta(minutes=100)
 
-
 class Store:
-    """
-    It's a little hacky to instantiate this class, but it allows
-    global access the start parameters.
-    """
     classes = ""
     dataset = ""
 
-
 GlobalStore = Store()
-
-
 class ImageClassifierService(Service):
     CLASSIFIER = "/golem/run/ImageClassification.py"
     CLASSIFIERCLIENT = "/golem/run/ClassifierClient.py"
-
     @staticmethod
     async def get_payload():
         return await vm.repo(
@@ -46,141 +42,78 @@ class ImageClassifierService(Service):
         )
 
     async def start(self):
+        print(GlobalStore.classes)
+        print(GlobalStore.dataset)
         """
-        Transfers over model weights, and starts prediction service, in addition to model
+        Transfers over model weights, and starts prediction service, in addition to model   
         REQUIRED PARAMS - dataset.tar.gz
         """
         data = "/golem/work/" + GlobalStore.dataset + ".tar.gz"
         self._ctx.send_file(str("vgg16.h5"), str("/golem/work/vgg16.h5"))
         sent = yield self._ctx.commit()
-        await sent
-        # Send in the dataset as a zipped file
+        finished = await sent
+        #Send in the dataset as a zipped file
         self._ctx.send_file(str(GlobalStore.dataset + ".tar.gz"), str(data))
-        self._ctx.run(
-            "/bin/tar",
-            "--no-same-owner",
-            "-C",
-            "/golem/work/",
-            "-xzvf",
-            data)
-        # Start Main classification script so http server can forward it
-        # requests
-        self._ctx.run(
-            "/bin/sh",
-            "-c",
-            "nohup python /golem/run/ImageClassification.py run &")
+        self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/", "-xzvf", data)
+        # Start Main classification script so http server can forward it requests
+        self._ctx.run("/bin/sh", "-c", "nohup python /golem/run/ImageClassification.py run &")
         servicestart = yield self._ctx.commit()
-        # This is required or it will execute the next script before socket is
-        # created, so delay is neccesary'
-        await servicestart
+        done1 = await servicestart # This is required or it will execute the next script before socket is created, so delay is neccesary'
         await asyncio.sleep(10)
         trainpath = "/golem/work/" + GlobalStore.dataset + "/train"
         validset = "/golem/work/" + GlobalStore.dataset + "/valid"
-        self._ctx.run(
-            self.CLASSIFIERCLIENT,
-            "-t",
-            trainpath,
-            "-v",
-            validset,
-            "--start",
-            "-c",
-            *GlobalStore.classes)
+        self._ctx.run("/bin/ls", "/golem/work/dataset")
+        status = yield self._ctx.commit()
+        finalized = await status
+        print(finalized)
+        self._ctx.run(self.CLASSIFIERCLIENT,"-t", trainpath, "-v", validset, "--start", "-c", *GlobalStore.classes)
         built = yield self._ctx.commit()
-        await built
-
+        done = await built
     async def run(self):
         """
         Starts a quick http server, accepts predict and train requests in packets
         """
         while True:
-            #task = ["train", "train.tar.gz", "valid.tar.gz"]
-            inputtsk = input("Enter your task please in the form of a list")
-            task = f"{inputtsk}"
+            #task = train train.tar.gz valid.tar.gz
+            #task = predict test1.jpg
+            inputtsk = input("Enter your task please in the form of a list : ")
+            task = inputtsk.split()
             if task[0] == "predict":
                 imagename = task[1]
                 await asyncio.sleep(10)
-                self._ctx.send_file(
-                    str(imagename), str(
-                        "/golem/work/" + GlobalStore.dataset + "/test/Unknown/" + imagename))
+                self._ctx.send_file(str(imagename), str("/golem/work/"+ GlobalStore.dataset + "/test/Unknown/" + imagename))
                 send = yield self._ctx.commit()
-                await send
+                sendf = await send
                 print("Test Image Sent!")
-                self._ctx.run(
-                    self.CLASSIFIERCLIENT,
-                    "-p",
-                    "/golem/work/" +
-                    GlobalStore.dataset +
-                    "/test",
-                    "-c",
-                    *
-                    GlobalStore.classes)
+                self._ctx.run(self.CLASSIFIERCLIENT, "-p", "/golem/work/" + GlobalStore.dataset + "/test","-c", *GlobalStore.classes)
                 future_results = yield self._ctx.commit()
                 results = await future_results
                 prediction = results[0].stdout.strip()
-                # Cleanup test folder for next prediction
-                self._ctx.run(
-                    "/bin/rm",
-                    "-rf",
-                    "/golem/work/" +
-                    GlobalStore.dataset +
-                    "/test")
+                #Cleanup test folder for next prediction
+                self._ctx.run("/bin/rm", "-rf", "/golem/work/"+ GlobalStore.dataset +"/test")
                 deletion = yield self._ctx.commit()
-                await deletion
+                ds = await deletion
                 print(prediction)
             if task[0] == "train":
                 trainpath = task[1]
                 validpath = task[2]
-                # Send in the dataset as a zipped file
-                self._ctx.send_file(
-                    str(trainpath), str(
-                        "/golem/work/" + GlobalStore.dataset + "/train/" + trainpath))
-                self._ctx.send_file(
-                    str(validpath), str(
-                        "/golem/work/" + GlobalStore.dataset + "/valid/" + validpath))
+                #Send in the dataset as a zipped file
+                self._ctx.send_file(str(trainpath), str("/golem/work/"+ GlobalStore.dataset + "/train/" + trainpath))
+                self._ctx.send_file(str(validpath), str("/golem/work/"+ GlobalStore.dataset + "/valid/" + validpath))
                 transferred = yield self._ctx.commit()
-                await transferred
-                train = "/golem/work/" + GlobalStore.dataset + "/train/" + trainpath
-                valid = "/golem/work/" + GlobalStore.dataset + "/valid/" + validpath
-                self._ctx.run(
-                    "/bin/tar",
-                    "--no-same-owner",
-                    "-C",
-                    "/golem/work/" +
-                    GlobalStore.dataset +
-                    "/train/",
-                    "-xzvf",
-                    train)
-                self._ctx.run(
-                    "/bin/tar",
-                    "--no-same-owner",
-                    "-C",
-                    "/golem/work/" +
-                    GlobalStore.dataset +
-                    "/valid/",
-                    "-xzvf",
-                    valid)
+                finished = await transferred
+                train = "/golem/work/" + GlobalStore.dataset +"/train/" + trainpath
+                valid = "/golem/work/" + GlobalStore.dataset +"/valid/" + validpath
+                self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/" + GlobalStore.dataset + "/train/", "-xzvf", train)
+                self._ctx.run("/bin/tar","--no-same-owner", "-C", "/golem/work/" + GlobalStore.dataset + "/valid/", "-xzvf", valid)
                 zipped = yield self._ctx.commit()
-                await zipped
-                # Now data is unzipped, next it executes
+                finalized = await zipped
+                #Now data is unzipped, next it executes
                 await asyncio.sleep(1)
-                self._ctx.run(
-                    self.CLASSIFIERCLIENT,
-                    "-t",
-                    "/golem/work/" +
-                    GlobalStore.dataset +
-                    "/train",
-                    "-v",
-                    "/golem/work/" +
-                    GlobalStore.dataset +
-                    "/valid",
-                    "-c",
-                    *
-                    GlobalStore.classes)
+                self._ctx.run(self.CLASSIFIERCLIENT, "-t", "/golem/work/" + GlobalStore.dataset + "/train", "-v", "/golem/work/" + GlobalStore.dataset + "/valid", "-c", *GlobalStore.classes) 
                 future_results = yield self._ctx.commit()
                 results = await future_results
                 print("Model Successfully Trained")
-
-
 async def main(subnet_tag, driver=None, network=None):
     async with Golem(
         budget=4.00,
@@ -213,8 +146,7 @@ async def main(subnet_tag, driver=None, network=None):
         # helper functions to display / filter instances
 
         def instances():
-            return [(s.provider_name, s.state.value)
-                    for s in cluster.instances]
+            return [(s.provider_name, s.state.value) for s in cluster.instances]
 
         def still_running():
             return any([s for s in cluster.instances if s.is_available])
@@ -231,8 +163,7 @@ async def main(subnet_tag, driver=None, network=None):
             await asyncio.sleep(5)
 
         if still_starting():
-            raise Exception(
-                f"Failed to start instances before {STARTING_TIMEOUT} elapsed :( ...")
+            raise Exception(f"Failed to start instances before {STARTING_TIMEOUT} elapsed :( ...")
 
         print("All instances started :)")
 
@@ -241,11 +172,11 @@ async def main(subnet_tag, driver=None, network=None):
 
         start_time = datetime.now()
 
-        while datetime.now() < start_time + timedelta(minutes=120):  # 2 hour timeout
+        while datetime.now() < start_time + timedelta(minutes=120): # 2 hour timeout 
             print(f"instances: {instances()}")
             await asyncio.sleep(5)
 
-        print("stopping instances")
+        print(f"stopping instances")
         cluster.stop()
 
         # wait for instances to stop
@@ -261,7 +192,7 @@ async def main(subnet_tag, driver=None, network=None):
 if __name__ == "__main__":
 
     now = datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-    log_file = f"simple-service-yapapi-{now}.log"
+    log_file=f"simple-service-yapapi-{now}.log"
 
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--dataset", type=str)
@@ -272,7 +203,7 @@ if __name__ == "__main__":
     GlobalStore.dataset = args.dataset
     GlobalStore.classes = args.classes
     now = datetime.now().strftime("%Y-%m-%d_%H.%M.%S")
-    log_file = f"simple-service-yapapi-{now}.log"
+    log_file=f"simple-service-yapapi-{now}.log"
 
     enable_default_logger(
         log_file=log_file,
@@ -288,27 +219,30 @@ if __name__ == "__main__":
 
     try:
         loop.run_until_complete(task)
-    except NoPaymentAccountError as error:
-        HANDBOOK_URL = (
+    except NoPaymentAccountError as e:
+        handbook_url = (
             "https://handbook.golem.network/requestor-tutorials/"
             "flash-tutorial-of-requestor-development"
         )
         print(
             f""
-            f"No payment account initialized for driver `{error.required_driver}` "
-            f"and network `{error.required_network}`.\n\n"
-            f"See {HANDBOOK_URL} on how to initialize payment accounts for a requestor node."
-            f"")
+            f"No payment account initialized for driver `{e.required_driver}` "
+            f"and network `{e.required_network}`.\n\n"
+            f"See {handbook_url} on how to initialize payment accounts for a requestor node."
+            f""
+        )
     except KeyboardInterrupt:
         print(
-            ""
+            f""
             "Shutting down gracefully, please wait a short while "
             "or press Ctrl+C to exit immediately..."
-            ""
+            f""
         )
         task.cancel()
         try:
             loop.run_until_complete(task)
-            print("Shutdown completed, thank you for waiting!")
+            print(
+                f"Shutdown completed, thank you for waiting!"
+            )
         except (asyncio.CancelledError, KeyboardInterrupt):
             pass
