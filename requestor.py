@@ -94,8 +94,8 @@ class ImageClassifierService(Service):
         """
         while True:
             #task = ["train", "train.tar.gz", "valid.tar.gz"]
-            inputtsk = input("Enter your task please in the form of a list")
-            task = f"{inputtsk}"
+            inputtsk = input("Enter your task with a space between the args")
+            task = inputtsk.split(" ")
             if task[0] == "predict":
                 imagename = task[1]
                 await asyncio.sleep(10)
