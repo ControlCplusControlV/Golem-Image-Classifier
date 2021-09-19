@@ -10,6 +10,8 @@ The service responds to 2 main types of requests, Predict and Train. The Request
 
 # Demo 
 
+Demo video [here](https://vimeo.com/609138081)
+
 Files used in demo.py
 
 [Dataset](https://mega.nz/file/dngA1J6J#uxrI6DOFMzdcr4vmU_9Y3gYLn1axbZ6X_a6imusPgDY)
